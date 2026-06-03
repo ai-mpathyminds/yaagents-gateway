@@ -12,7 +12,7 @@
 # Auth:       GITHUB_TOKEN (packages: write) — OIDC; no PAT
 # SBOM:       SPDX 2.3 JSON (syft / anchore/sbom-action) -> attached to Release
 # Scan:       trivy image scan HIGH+CRITICAL (exit 1 on unpatched findings)
-# Cosign:     deferred to PI3-yaa (ADR PI1-yaa-0005 §4)
+# Cosign:     keyless sign via OIDC (sigstore/cosign-installer) -- ADR PI1-yaa-0005 §4
 
 on:
   push:
@@ -24,6 +24,7 @@ permissions:
   contents: write          # create / update GitHub Release + upload SBOM asset
   packages: write          # push image to ghcr.io via GITHUB_TOKEN
   security-events: write   # upload Trivy SARIF to GitHub Security tab
+  id-token: write          # required for cosign keyless OIDC signing
 
 jobs:
   build-push-scan:
@@ -93,6 +94,30 @@ jobs:
           cache-to: type=gha,mode=max
           provenance: true
 
+
+      # -- Cosign keyless-sign published image (ADR PI1-yaa-0005) ----------
+      # Signs the published image digest using GitHub OIDC (no stored secrets).
+      # Requires: id-token: write (added to workflow permissions above).
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.7.0
+        with:
+          cosign-release: 'v2.4.1'
+
+      - name: Cosign keyless-sign published image
+        env:
+          COSIGN_EXPERIMENTAL: '1'
+        run: |
+          DIGEST="${{ steps.push.outputs.digest }}"
+          cosign sign --yes ghcr.io/ai-mpathyminds/yaagents-gateway@${DIGEST}
+          echo "cosign-sign: PASS digest=${DIGEST}"
+
+      - name: Cosign verify (sanity check)
+        run: |
+          DIGEST="${{ steps.push.outputs.digest }}"
+          cosign verify --certificate-identity-regexp '.+' --certificate-oidc-issuer https://token.actions.githubusercontent.com ghcr.io/ai-mpathyminds/yaagents-gateway@${DIGEST}
+          echo "cosign-verify: PASS"
+
+
       # -- OCI license label verification ------------------------------------
       # WI-3yaa.RP-WORKFLOWS-RECOVER AC: org.opencontainers.image.licenses = Apache-2.0
       # ADR PI2-yaa-0003.
@@ -130,7 +155,7 @@ jobs:
           category: trivy-container
 
       # -- SBOM — SPDX 2.3 JSON (syft / anchore/sbom-action) ----------------
-      # OQ-5 resolution: SPDX 2.3 JSON. Cosign SBOM attestation deferred to PI3-yaa.
+      # OQ-5 resolution: SPDX 2.3 JSON. Cosign SBOM attestation added at PI3-yaa.
       - name: Generate SBOM -- SPDX 2.3 JSON (syft)
         uses: anchore/sbom-action@v0.24.0
         with:
