@@ -122,6 +122,7 @@ jobs:
           ignore-unfixed: true
 
       - name: Upload Trivy SARIF to GitHub Security
+        continue-on-error: true  # GHAS required for private repos; non-fatal
         if: always()   # upload results even if the scan step fails
         uses: github/codeql-action/upload-sarif@v3
         with:
