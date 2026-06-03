@@ -111,7 +111,7 @@ jobs:
       # exit-code: 1 — CI fails on any unpatched HIGH or CRITICAL finding.
       # ignore-unfixed: true — advisory-only; non-actionable vulns don't block.
       - name: trivy-scan
-        uses: aquasecurity/trivy-action@0.30.0
+        uses: aquasecurity/trivy-action@0.36.0
         with:
           image-ref: ${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
           format: sarif
@@ -130,7 +130,7 @@ jobs:
       # -- SBOM — SPDX 2.3 JSON (syft / anchore/sbom-action) ----------------
       # OQ-5 resolution: SPDX 2.3 JSON. Cosign SBOM attestation deferred to PI3-yaa.
       - name: Generate SBOM -- SPDX 2.3 JSON (syft)
-        uses: anchore/sbom-action@v0.17.9
+        uses: anchore/sbom-action@v0.24.0
         with:
           image: ${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
           format: spdx-json
