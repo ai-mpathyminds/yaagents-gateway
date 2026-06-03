@@ -144,6 +144,7 @@ jobs:
       # -- attach SBOM to GitHub Release ------------------------------------
       # Creates the release if it does not exist; uploads sbom.spdx.json.
       - name: Attach SBOM to GitHub Release
+        continue-on-error: true  # Requires tag context; non-fatal on workflow_dispatch
         uses: softprops/action-gh-release@v2
         with:
           files: sbom.spdx.json
