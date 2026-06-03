@@ -1,24 +1,22 @@
 // SPDX-License-Identifier: Apache-2.0
 // Copyright 2026 AimpathyMinds
 
-// Inline JWKS fetch + RS256 validation (ADR PI2-yaa-0005 Decision 1).
-// portfolio/packages/go/auth-jwks/ does not exist yet; this implementation is
-// the minimum viable inline. The Init signature is stable so the import path
-// can switch when the extraction lands.
+// Inline JWKS fetch + RS256 validation .
+// Reference implementation. The Init signature is stable for future extraction.
 //
 // Features (v1 — preserved):
-//   - In-memory key cache keyed on "kid" with configurable TTL.
-//   - Stale-while-revalidate: on JWKS refresh failure, previously-good keys are
-//     served and a warn log is emitted; requests are not hard-failed.
-//   - fetchCount atomic counter exposed via hitCount() for test assertions.
+// - In-memory key cache keyed on "kid" with configurable TTL.
+// - Stale-while-revalidate: on JWKS refresh failure, previously-good keys are
+// served and a warn log is emitted; requests are not hard-failed.
+// - fetchCount atomic counter exposed via hitCount() for test assertions.
 //
-// Features (v2 additions — PLG-3b / ADR PI2-yaa-0007):
-//   - errJWKSUnavailable sentinel: cold-start fetch failure returns a typed
-//     error so the handler can respond 503 vs 401.
-//   - validateWith: RS256 validation without library-level audience check and
-//     with configurable clock-skew leeway (jwt.WithLeeway).
-//   - issuerEntry + jwksPool: per-issuer JWKS validator pool for multi-IdP
-//     deployments.
+// Features (v2 additions — v2 additions):
+// - errJWKSUnavailable sentinel: cold-start fetch failure returns a typed
+// error so the handler can respond 503 vs 401.
+// - validateWith: RS256 validation without library-level audience check and
+// with configurable clock-skew leeway (jwt.WithLeeway).
+// - issuerEntry + jwksPool: per-issuer JWKS validator pool for multi-IdP
+// deployments.
 
 package tokenvalidator
 
@@ -63,8 +61,8 @@ func isJWKSUnavailable(err error) bool {
 type jwk struct {
 	Kty string `json:"kty"`
 	Kid string `json:"kid"`
-	N   string `json:"n"`
-	E   string `json:"e"`
+	N string `json:"n"`
+	E string `json:"e"`
 }
 
 // jwkSet is the top-level JWKS document.
@@ -76,13 +74,13 @@ type jwkSet struct {
 
 // jwksValidator validates RS256 JWTs using public keys fetched from a JWKS endpoint.
 type jwksValidator struct {
-	url    string
+	url string
 	client *http.Client
-	ttl    time.Duration
+	ttl time.Duration
 
-	mu      sync.RWMutex
-	keys    map[string]*rsa.PublicKey // current keys (possibly stale after TTL expiry)
-	fetchAt time.Time                 // time of last successful fetch
+	mu sync.RWMutex
+	keys map[string]*rsa.PublicKey // current keys (possibly stale after TTL expiry)
+	fetchAt time.Time // time of last successful fetch
 
 	fetchCount int64 // atomic; counts JWKS HTTP fetches; used in tests
 }
@@ -90,10 +88,10 @@ type jwksValidator struct {
 // newJWKSValidator creates a jwksValidator for the given JWKS URL and cache TTL.
 func newJWKSValidator(url string, ttl time.Duration) *jwksValidator {
 	return &jwksValidator{
-		url:    url,
+		url: url,
 		client: &http.Client{Timeout: 10 * time.Second},
-		ttl:    ttl,
-		keys:   map[string]*rsa.PublicKey{},
+		ttl: ttl,
+		keys: map[string]*rsa.PublicKey{},
 	}
 }
 
@@ -173,9 +171,9 @@ func (v *jwksValidator) validateWith(tokenStr string, methods []string, skew tim
 // Uses the cache when live; triggers a refresh on TTL expiry.
 //
 // On refresh failure:
-//   - If stale keys exist for kid: serves them (stale-while-revalidate).
-//   - If no keys have ever been cached (cold-start): returns errJWKSUnavailable.
-//   - Otherwise: returns the original refresh error.
+// - If stale keys exist for kid: serves them (stale-while-revalidate).
+// - If no keys have ever been cached (cold-start): returns errJWKSUnavailable.
+// - Otherwise: returns the original refresh error.
 func (v *jwksValidator) getKey(kid string) (*rsa.PublicKey, error) {
 	v.mu.RLock()
 	key, ok := v.keys[kid]
@@ -271,7 +269,7 @@ func rsaFromJWK(k jwk) (*rsa.PublicKey, error) {
 
 // issuerEntry pairs an issuer string with its dedicated JWKS validator.
 type issuerEntry struct {
-	issuer    string // expected "iss" claim value; "" matches any issuer (v1 shim)
+	issuer string // expected "iss" claim value; "" matches any issuer (v1 shim)
 	validator *jwksValidator
 }
 

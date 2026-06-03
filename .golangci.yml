@@ -20,7 +20,7 @@ linters:
 linters-settings:
   gosec:
     # G101 — "hardcoded credentials" triggers on the word "secret" in var names.
-    # GATEWAY_JWT_SECRET is an env-var name documented in CLAUDE.md as runtime-only;
+    # GATEWAY_JWT_SECRET is an env-var name documented in an env-var used at runtime only;
     # it is never assigned a literal credential value in source. Exclude G101 to
     # avoid false positives on env-var name strings.
     excludes:

@@ -2,7 +2,7 @@
 // Copyright 2026 AimpathyMinds
 
 // Package tenant provides middleware for tenant/actor context propagation
-// and per-route tenant enforcement per the Agentic REST Profile (ADR PI1-yaa-0001).
+// and per-route tenant enforcement per the Agentic REST Profile .
 //
 // Middleware chain order (after auth.Middleware):
 //
@@ -23,13 +23,13 @@ import (
 
 // ContextMiddleware is a global middleware that runs after auth.Middleware.
 // It:
-//   - generates X-Correlation-ID (UUID v4) if the header is absent; passes it
-//     through unchanged if present
-//   - always generates a fresh X-Request-ID for this request
-//   - extracts X-Tenant-ID from the inbound header
-//   - extracts actor subject + roles from auth.Claims stored in context by GW-2
-//   - stores all four values in the request context via reqctx
-//   - echoes X-Correlation-ID and X-Request-ID on the response
+// - generates X-Correlation-ID (UUID v4) if the header is absent; passes it
+// through unchanged if present
+// - always generates a fresh X-Request-ID for this request
+// - extracts X-Tenant-ID from the inbound header
+// - extracts actor subject + roles from auth.Claims stored in context by GW-2
+// - stores all four values in the request context via reqctx
+// - echoes X-Correlation-ID and X-Request-ID on the response
 func ContextMiddleware(log *slog.Logger) func(http.Handler) http.Handler {
 	return func(next http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -78,12 +78,12 @@ func EnforceTenant(tenantRequired bool) func(http.Handler) http.Handler {
 		return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 			if tenantRequired && reqctx.TenantID(r.Context()) == "" {
 				response.WriteError(w, http.StatusForbidden, response.ErrorBody{
-					Type:    "forbidden",
-					Code:    "TENANT_REQUIRED",
+					Type: "forbidden",
+					Code: "TENANT_REQUIRED",
 					Message: "route requires X-Tenant-ID header",
 					Trace: response.Trace{
 						CorrelationID: reqctx.CorrelationID(r.Context()),
-						RequestID:     reqctx.RequestID(r.Context()),
+						RequestID: reqctx.RequestID(r.Context()),
 					},
 				})
 				return

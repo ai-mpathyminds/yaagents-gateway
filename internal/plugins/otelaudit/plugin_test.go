@@ -20,7 +20,7 @@ import (
 
 type warnCounter struct {
 	target string
-	count  atomic.Int64
+	count atomic.Int64
 }
 
 func (h *warnCounter) Enabled(_ context.Context, lvl slog.Level) bool {
@@ -33,7 +33,7 @@ func (h *warnCounter) Handle(_ context.Context, r slog.Record) error {
 	return nil
 }
 func (h *warnCounter) WithAttrs(_ []slog.Attr) slog.Handler { return h }
-func (h *warnCounter) WithGroup(_ string) slog.Handler      { return h }
+func (h *warnCounter) WithGroup(_ string) slog.Handler { return h }
 
 func setLogger(t *testing.T, h slog.Handler) {
 	t.Helper()
@@ -73,7 +73,7 @@ func TestName(t *testing.T) {
 func TestInit_MalformedEndpoint_NoScheme(t *testing.T) {
 	a := &OtelAudit{}
 	err := a.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":  true,
+		"enabled": true,
 		"endpoint": "not-a-url",
 	}))
 	if err == nil {
@@ -84,7 +84,7 @@ func TestInit_MalformedEndpoint_NoScheme(t *testing.T) {
 func TestInit_MalformedEndpoint_NoHost(t *testing.T) {
 	a := &OtelAudit{}
 	err := a.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":  true,
+		"enabled": true,
 		"endpoint": "grpc://",
 	}))
 	if err == nil {
@@ -103,7 +103,7 @@ func TestInit_EmptyEndpoint_OK(t *testing.T) {
 func TestInit_ValidEndpoint_OK(t *testing.T) {
 	a := &OtelAudit{}
 	err := a.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":  true,
+		"enabled": true,
 		"endpoint": "http://otel-collector:4317",
 	}))
 	if err != nil {
@@ -183,7 +183,7 @@ func TestHandler_EnabledWithEndpoint_NoWarn(t *testing.T) {
 	setLogger(t, h)
 
 	a := newPlugin(t, map[string]any{
-		"enabled":  true,
+		"enabled": true,
 		"endpoint": "grpc://otel-collector:4317",
 	})
 	handler := a.Handler(passThrough())

@@ -14,10 +14,10 @@ import (
 // stubConfig is a minimal PluginConfig implementation for tests.
 type stubConfig struct{ m map[string]any }
 
-func newStub(m map[string]any) plugin.PluginConfig     { return &stubConfig{m} }
-func (s *stubConfig) GetString(k string) string         { v, _ := s.m[k].(string); return v }
-func (s *stubConfig) GetBool(k string) bool             { v, _ := s.m[k].(bool); return v }
-func (s *stubConfig) GetInt(k string) int               { v, _ := s.m[k].(int); return v }
+func newStub(m map[string]any) plugin.PluginConfig { return &stubConfig{m} }
+func (s *stubConfig) GetString(k string) string { v, _ := s.m[k].(string); return v }
+func (s *stubConfig) GetBool(k string) bool { v, _ := s.m[k].(bool); return v }
+func (s *stubConfig) GetInt(k string) int { v, _ := s.m[k].(int); return v }
 func (s *stubConfig) GetStringSlice(k string) []string {
 	v, _ := s.m[k].([]string)
 	return v
@@ -38,7 +38,7 @@ func makePlugin(t *testing.T, origins []string) *CORSPlugin {
 // nextRecorder captures whether next was called and its request.
 type nextRecorder struct {
 	called bool
-	req    *http.Request
+	req *http.Request
 }
 
 func (n *nextRecorder) ServeHTTP(w http.ResponseWriter, r *http.Request) {

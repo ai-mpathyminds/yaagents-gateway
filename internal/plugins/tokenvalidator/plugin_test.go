@@ -45,8 +45,8 @@ func publicKeyToJWK(pub *rsa.PublicKey, kid string) map[string]string {
 		"kid": kid,
 		"alg": "RS256",
 		"use": "sig",
-		"n":   base64.RawURLEncoding.EncodeToString(nBytes),
-		"e":   base64.RawURLEncoding.EncodeToString(eBytes),
+		"n": base64.RawURLEncoding.EncodeToString(nBytes),
+		"e": base64.RawURLEncoding.EncodeToString(eBytes),
 	}
 }
 
@@ -119,7 +119,7 @@ func TestInit_EnabledFalse_Error(t *testing.T) {
 func TestInit_TestModeEmptySecret_Error(t *testing.T) {
 	tv := &TokenValidator{}
 	err := tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":   true,
+		"enabled": true,
 		"test_mode": true,
 		// jwt_secret absent → empty string
 	}))
@@ -139,8 +139,8 @@ func TestInit_NeitherConfigured_Error(t *testing.T) {
 func TestInit_TestMode_Valid(t *testing.T) {
 	tv := &TokenValidator{}
 	err := tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":    true,
-		"test_mode":  true,
+		"enabled": true,
+		"test_mode": true,
 		"jwt_secret": "super-secret",
 	}))
 	if err != nil {
@@ -154,7 +154,7 @@ func TestInit_TestMode_Valid(t *testing.T) {
 func TestInit_JWKSMode_Valid(t *testing.T) {
 	tv := &TokenValidator{}
 	err := tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":  true,
+		"enabled": true,
 		"jwks_url": "https://auth.example.com/.well-known/jwks.json",
 	}))
 	if err != nil {
@@ -168,7 +168,7 @@ func TestInit_JWKSMode_Valid(t *testing.T) {
 func TestInit_CacheTTLDefault(t *testing.T) {
 	tv := &TokenValidator{}
 	_ = tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":  true,
+		"enabled": true,
 		"jwks_url": "https://auth.example.com/.well-known/jwks.json",
 	}))
 	if tv.jwksVal.ttl != 600*time.Second {
@@ -191,8 +191,8 @@ func newHS256Plugin(t *testing.T, secret string) *TokenValidator {
 	t.Helper()
 	tv := &TokenValidator{}
 	if err := tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":    true,
-		"test_mode":  true,
+		"enabled": true,
+		"test_mode": true,
 		"jwt_secret": secret,
 	})); err != nil {
 		t.Fatalf("Init HS256: %v", err)
@@ -231,9 +231,9 @@ func TestHandler_HS256_ClaimsPropagated(t *testing.T) {
 	tv := newHS256Plugin(t, secret)
 
 	claims := jwt.MapClaims{
-		"sub":       "alice",
-		"exp":       time.Now().Add(time.Hour).Unix(),
-		"roles":     []interface{}{"admin", "editor"},
+		"sub": "alice",
+		"exp": time.Now().Add(time.Hour).Unix(),
+		"roles": []interface{}{"admin", "editor"},
 		"tenant_id": "acme",
 	}
 	tok := signHS256(t, secret, claims)
@@ -380,8 +380,8 @@ func newJWKSPlugin(t *testing.T, jwksURL string) *TokenValidator {
 	t.Helper()
 	tv := &TokenValidator{}
 	if err := tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":           true,
-		"jwks_url":          jwksURL,
+		"enabled": true,
+		"jwks_url": jwksURL,
 		"cache_ttl_seconds": 600,
 	})); err != nil {
 		t.Fatalf("Init JWKS: %v", err)
@@ -511,10 +511,10 @@ func TestHandler_HS256_AudienceMismatch_Returns403(t *testing.T) {
 	const secret = "sec"
 	tv := &TokenValidator{}
 	_ = tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":    true,
-		"test_mode":  true,
+		"enabled": true,
+		"test_mode": true,
 		"jwt_secret": secret,
-		"audience":   "expected-audience",
+		"audience": "expected-audience",
 	}))
 
 	claims := jwt.MapClaims{
@@ -591,7 +591,7 @@ func TestShutdown_NoError(t *testing.T) {
 }
 
 // ═══════════════════════════════════════════════════════════════════════════════
-// PLG-3b / ADR PI2-yaa-0007 — v2 tests (9 amendments)
+// PLG-3b /v2 tests (9 amendments)
 // ═══════════════════════════════════════════════════════════════════════════════
 
 // ── v2 test helpers ───────────────────────────────────────────────────────────
@@ -612,14 +612,14 @@ func makeIssuers(entries ...map[string]any) []any {
 func newV2JWKSPlugin(t *testing.T, issuers []any, overrides map[string]any) *TokenValidator {
 	t.Helper()
 	cfg := map[string]any{
-		"enabled":              true,
-		"issuers":              issuers,
-		"algorithms":           []string{"RS256"},
-		"clock_skew_seconds":   0,
-		"required_claims":      []string{"sub"},
-		"propagate_claims":     map[string]any{"mode": "all"},
-		"token":                map[string]any{"header": "Authorization", "scheme": "Bearer"},
-		"max_token_bytes":      8192,
+		"enabled": true,
+		"issuers": issuers,
+		"algorithms": []string{"RS256"},
+		"clock_skew_seconds": 0,
+		"required_claims": []string{"sub"},
+		"propagate_claims": map[string]any{"mode": "all"},
+		"token": map[string]any{"header": "Authorization", "scheme": "Bearer"},
+		"max_token_bytes": 8192,
 	}
 	for k, v := range overrides {
 		cfg[k] = v
@@ -651,7 +651,7 @@ func TestInit_V2_Issuers_Valid(t *testing.T) {
 	err := tv.Init(plugin.NewMapConfig(map[string]any{
 		"enabled": true,
 		"issuers": makeIssuers(map[string]any{
-			"issuer":  "https://iam.example.com",
+			"issuer": "https://iam.example.com",
 			"jwks_url": srvURL,
 		}),
 	}))
@@ -758,7 +758,7 @@ func TestHandler_V2_MultiIssuer_UnknownIssuer_Returns401(t *testing.T) {
 	priv := testRSAKey(t)
 	const (
 		knownIss = "https://iam.example.com"
-		kid      = "k"
+		kid = "k"
 	)
 	srvURL, _ := jwksServer(t, map[string]*rsa.PublicKey{kid: &priv.PublicKey})
 	tv := newV2JWKSPlugin(t, makeIssuers(
@@ -787,7 +787,7 @@ func TestInit_V2_AlgorithmsNone_Error(t *testing.T) {
 	err := tv.Init(plugin.NewMapConfig(map[string]any{
 		"enabled": true,
 		"issuers": makeIssuers(map[string]any{
-			"issuer":  "https://iam.example.com",
+			"issuer": "https://iam.example.com",
 			"jwks_url": srvURL,
 		}),
 		"algorithms": []string{"none", "RS256"},
@@ -824,10 +824,10 @@ func TestHandler_V2_MultiAudience_Match(t *testing.T) {
 	const secret = "sec"
 	tv := &TokenValidator{}
 	if err := tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":    true,
-		"test_mode":  true,
+		"enabled": true,
+		"test_mode": true,
 		"jwt_secret": secret,
-		"audiences":  []string{"b", "c"},
+		"audiences": []string{"b", "c"},
 	})); err != nil {
 		t.Fatalf("Init: %v", err)
 	}
@@ -856,10 +856,10 @@ func TestHandler_V2_MultiAudience_Mismatch_Returns401(t *testing.T) {
 	const secret = "sec"
 	tv := &TokenValidator{}
 	if err := tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":    true,
-		"test_mode":  true,
+		"enabled": true,
+		"test_mode": true,
 		"jwt_secret": secret,
-		"audiences":  []string{"a", "b"},
+		"audiences": []string{"a", "b"},
 	})); err != nil {
 		t.Fatalf("Init: %v", err)
 	}
@@ -887,9 +887,9 @@ func TestHandler_V2_ClockSkew_WithinTolerance(t *testing.T) {
 	const secret = "sec"
 	tv := &TokenValidator{}
 	if err := tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":            true,
-		"test_mode":          true,
-		"jwt_secret":         secret,
+		"enabled": true,
+		"test_mode": true,
+		"jwt_secret": secret,
 		"clock_skew_seconds": 60, // 60 s leeway
 	})); err != nil {
 		t.Fatalf("Init: %v", err)
@@ -919,9 +919,9 @@ func TestHandler_V2_ClockSkew_Exceeded_Returns401(t *testing.T) {
 	const secret = "sec"
 	tv := &TokenValidator{}
 	if err := tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":            true,
-		"test_mode":          true,
-		"jwt_secret":         secret,
+		"enabled": true,
+		"test_mode": true,
+		"jwt_secret": secret,
 		"clock_skew_seconds": 10, // only 10 s leeway
 	})); err != nil {
 		t.Fatalf("Init: %v", err)
@@ -950,9 +950,9 @@ func TestHandler_V2_RequiredClaims_Missing_Returns401(t *testing.T) {
 	const secret = "sec"
 	tv := &TokenValidator{}
 	if err := tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":         true,
-		"test_mode":       true,
-		"jwt_secret":      secret,
+		"enabled": true,
+		"test_mode": true,
+		"jwt_secret": secret,
 		"required_claims": []string{"sub", "tenant_id"},
 	})); err != nil {
 		t.Fatalf("Init: %v", err)
@@ -977,18 +977,18 @@ func TestHandler_V2_PropagateClaims_All(t *testing.T) {
 	const secret = "sec"
 	tv := &TokenValidator{}
 	if err := tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":          true,
-		"test_mode":        true,
-		"jwt_secret":       secret,
+		"enabled": true,
+		"test_mode": true,
+		"jwt_secret": secret,
 		"propagate_claims": map[string]any{"mode": "all"},
 	})); err != nil {
 		t.Fatalf("Init: %v", err)
 	}
 
 	claims := jwt.MapClaims{
-		"sub":   "judy",
+		"sub": "judy",
 		"email": "judy@example.com",
-		"exp":   time.Now().Add(time.Hour).Unix(),
+		"exp": time.Now().Add(time.Hour).Unix(),
 	}
 	tok := signHS256(t, secret, claims)
 
@@ -1012,11 +1012,11 @@ func TestHandler_V2_PropagateClaims_Allowlist(t *testing.T) {
 	const secret = "sec"
 	tv := &TokenValidator{}
 	if err := tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":    true,
-		"test_mode":  true,
+		"enabled": true,
+		"test_mode": true,
 		"jwt_secret": secret,
 		"propagate_claims": map[string]any{
-			"mode":   "allowlist",
+			"mode": "allowlist",
 			"claims": []any{"sub", "email"},
 		},
 	})); err != nil {
@@ -1024,10 +1024,10 @@ func TestHandler_V2_PropagateClaims_Allowlist(t *testing.T) {
 	}
 
 	claims := jwt.MapClaims{
-		"sub":       "karen",
-		"email":     "karen@example.com",
+		"sub": "karen",
+		"email": "karen@example.com",
 		"tenant_id": "acme", // should NOT be propagated
-		"exp":       time.Now().Add(time.Hour).Unix(),
+		"exp": time.Now().Add(time.Hour).Unix(),
 	}
 	tok := signHS256(t, secret, claims)
 
@@ -1053,11 +1053,11 @@ func TestHandler_V2_PropagateClaims_Allowlist(t *testing.T) {
 func TestInit_V2_PropagateAllowlist_EmptyClaims_Error(t *testing.T) {
 	tv := &TokenValidator{}
 	err := tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":    true,
-		"test_mode":  true,
+		"enabled": true,
+		"test_mode": true,
 		"jwt_secret": "s",
 		"propagate_claims": map[string]any{
-			"mode":   "allowlist",
+			"mode": "allowlist",
 			"claims": []any{}, // empty → error
 		},
 	}))
@@ -1072,8 +1072,8 @@ func TestHandler_V2_CustomHeader_NoScheme(t *testing.T) {
 	const secret = "sec"
 	tv := &TokenValidator{}
 	if err := tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":    true,
-		"test_mode":  true,
+		"enabled": true,
+		"test_mode": true,
 		"jwt_secret": secret,
 		"token": map[string]any{
 			"header": "X-Auth-Token",
@@ -1104,10 +1104,10 @@ func TestHandler_V2_Default_MissingToken_Returns401(t *testing.T) {
 	const secret = "sec"
 	tv := &TokenValidator{}
 	if err := tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":    true,
-		"test_mode":  true,
+		"enabled": true,
+		"test_mode": true,
 		"jwt_secret": secret,
-		"audiences":  []string{}, // v2 config trigger
+		"audiences": []string{}, // v2 config trigger
 	})); err != nil {
 		t.Fatalf("Init: %v", err)
 	}
@@ -1126,13 +1126,13 @@ func TestHandler_V2_OnFailure_Override_Returns403(t *testing.T) {
 	const secret = "sec"
 	tv := &TokenValidator{}
 	if err := tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":    true,
-		"test_mode":  true,
+		"enabled": true,
+		"test_mode": true,
 		"jwt_secret": secret,
-		"audiences":  []string{},
+		"audiences": []string{},
 		"on_failure": map[string]any{
 			"missing_token": 403,
-			"expired":       403,
+			"expired": 403,
 		},
 	})); err != nil {
 		t.Fatalf("Init: %v", err)
@@ -1153,10 +1153,10 @@ func TestHandler_V2_MaxTokenBytes_Exceeded_Returns400(t *testing.T) {
 	const secret = "sec"
 	tv := &TokenValidator{}
 	if err := tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":         true,
-		"test_mode":       true,
-		"jwt_secret":      secret,
-		"audiences":       []string{},
+		"enabled": true,
+		"test_mode": true,
+		"jwt_secret": secret,
+		"audiences": []string{},
 		"max_token_bytes": 64, // tiny cap to force failure
 	})); err != nil {
 		t.Fatalf("Init: %v", err)
@@ -1191,9 +1191,9 @@ func TestInit_V2_V1Shim_JWKSURLLoadsCleanly(t *testing.T) {
 	srvURL, _ := jwksServer(t, map[string]*rsa.PublicKey{"k": &priv.PublicKey})
 	tv := &TokenValidator{}
 	err := tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":    true,
-		"jwks_url":   srvURL,
-		"audience":   "myapp",
+		"enabled": true,
+		"jwks_url": srvURL,
+		"audience": "myapp",
 		"on_failure": map[string]any{"missing_token": 401}, // trigger v2 mode
 	}))
 	if err != nil {
@@ -1213,8 +1213,8 @@ func TestHandler_V2_V1Shim_ValidToken_Passes(t *testing.T) {
 	// Use the v1-compat shim path: jwks_url + audiences (v2 key trigger).
 	tv2 := &TokenValidator{}
 	if err := tv2.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":   true,
-		"jwks_url":  srvURL,
+		"enabled": true,
+		"jwks_url": srvURL,
 		"audiences": []string{}, // v2 key trigger
 	})); err != nil {
 		t.Fatalf("Init v1 shim: %v", err)
@@ -1244,7 +1244,7 @@ func TestHandler_V2_JWKSUnavailable_Returns503(t *testing.T) {
 	if err := tv.Init(plugin.NewMapConfig(map[string]any{
 		"enabled": true,
 		"issuers": makeIssuers(map[string]any{
-			"issuer":  "https://iam.example.com",
+			"issuer": "https://iam.example.com",
 			"jwks_url": "http://127.0.0.1:19999/not-reachable",
 		}),
 		"algorithms": []string{"RS256"},
@@ -1273,9 +1273,9 @@ func TestHandler_V2_JWKSUnavailable_Returns503(t *testing.T) {
 func TestInit_V2_ClockSkewOutOfBounds_Error(t *testing.T) {
 	tv := &TokenValidator{}
 	err := tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":            true,
-		"test_mode":          true,
-		"jwt_secret":         "s",
+		"enabled": true,
+		"test_mode": true,
+		"jwt_secret": "s",
 		"clock_skew_seconds": 700, // > 600
 	}))
 	if err == nil {
@@ -1286,9 +1286,9 @@ func TestInit_V2_ClockSkewOutOfBounds_Error(t *testing.T) {
 func TestInit_V2_MaxTokenBytesOutOfBounds_Error(t *testing.T) {
 	tv := &TokenValidator{}
 	err := tv.Init(plugin.NewMapConfig(map[string]any{
-		"enabled":         true,
-		"test_mode":       true,
-		"jwt_secret":      "s",
+		"enabled": true,
+		"test_mode": true,
+		"jwt_secret": "s",
 		"max_token_bytes": 70000, // > 65536
 	}))
 	if err == nil {

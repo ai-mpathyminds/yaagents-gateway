@@ -4,16 +4,16 @@
 // Command gateway is the yaagents API gateway — a lightweight reverse proxy
 // that adds authn, tenant/actor context, RBAC, typed-response passthrough,
 // audit logging, and Prometheus metrics for the Agentic REST Profile
-// (ADR PI1-yaa-0001; plugin chain per ADR PI2-yaa-0001).
+// .
 //
 // Configuration is via environment variables:
 //
-//	GATEWAY_PORT              TCP port to listen on (default: 8120)
-//	GATEWAY_ROUTES_FILE       Path to routes.yaml (default: routes.yaml)
-//	GATEWAY_AUDIT_LOG         Audit sink: "stdout" or file path (default: stdout)
-//	GATEWAY_PLUGINS_FILE      Optional path to standalone plugins.yaml
-//	GATEWAY_JWT_SECRET        HS256 secret — injected into token-validator config
-//	GATEWAY_JWT_JWKS_URL      JWKS URL  — injected into token-validator config
+//	GATEWAY_PORT TCP port to listen on (default: 8120)
+//	GATEWAY_ROUTES_FILE Path to routes.yaml (default: routes.yaml)
+//	GATEWAY_AUDIT_LOG Audit sink: "stdout" or file path (default: stdout)
+//	GATEWAY_PLUGINS_FILE Optional path to standalone plugins.yaml
+//	GATEWAY_JWT_SECRET HS256 secret — injected into token-validator config
+//	GATEWAY_JWT_JWKS_URL JWKS URL — injected into token-validator config
 package main
 
 import (
@@ -37,7 +37,7 @@ import (
 	"github.com/ai-mpathyminds/yaagents-gateway/internal/response"
 	"github.com/ai-mpathyminds/yaagents-gateway/internal/routes"
 
-	// Plugin side-effect registrations (ADR PI2-yaa-0001 §3).
+	// Plugin side-effect registrations .
 	_ "github.com/ai-mpathyminds/yaagents-gateway/internal/plugins/cors"
 	_ "github.com/ai-mpathyminds/yaagents-gateway/internal/plugins/tokenvalidator"
 )
@@ -59,13 +59,13 @@ func main() {
 	)
 
 	// PLG-6: boot-time per-route plugin-override validation.
-	// Ensures no route disables token-validator (ADR PI2-yaa-0001 §5).
+	// Ensures no route disables token-validator .
 	if overrideErr := loader.ValidateRouteOverrides(routeList); overrideErr != nil {
 		log.Error("invalid per-route plugin override — cannot start", "error", overrideErr.Error())
 		os.Exit(1)
 	}
 
-	// Audit log sink (WI-1yaa.GW-5).
+	// Audit log sink.
 	auditSink, closeAudit, auditErr := audit.OpenSink(cfg.AuditLog)
 	if auditErr != nil {
 		log.Error("cannot open audit log — cannot start", "error", auditErr.Error())
@@ -74,12 +74,12 @@ func main() {
 	defer closeAudit()
 	auditLog := audit.New(auditSink)
 
-	// Prometheus metrics registry (WI-1yaa.GW-5).
+	// Prometheus metrics registry.
 	reg := metrics.New()
 
 	// Plugin loader — reads plugins: block, validates always-on assertion,
 	// merges env vars into token-validator config, calls Init in declaration order.
-	// Any error is a fatal boot failure (ADR PI2-yaa-0001 §5; PRD §6.4).
+	// Any error is a fatal boot failure .
 	ldr, ldrErr := loader.Load(log, cfg.PluginsFile, cfg.RoutesFile, cfg.JWTSecret, cfg.JWTJWKSURL)
 	if ldrErr != nil {
 		log.Error("plugin loader failed — cannot start", "error", ldrErr.Error())
@@ -109,7 +109,7 @@ func main() {
 	// and are always reachable (PRD §10 [SEC] Gateway; PLG-6 AC).
 	mux.HandleFunc("GET /healthz", handleHealthz)
 	mux.HandleFunc("GET /readyz", makeReadyzHandler(len(routeList) > 0))
-	// Combined /metrics: PI1-yaa request/latency histograms + LLM-4 SSE metrics.
+	// Combined /metrics: request/latency histograms + LLM proxy SSE metrics.
 	mux.HandleFunc("GET /metrics", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "text/plain; version=0.0.4; charset=utf-8")
 		w.WriteHeader(http.StatusOK)
@@ -121,11 +121,11 @@ func main() {
 
 	shutdownTimeout := time.Duration(cfg.ShutdownTimeoutS) * time.Second
 	srv := &http.Server{
-		Addr:         fmt.Sprintf(":%s", cfg.Port),
-		Handler:      mux,
-		ReadTimeout:  30 * time.Second,
+		Addr: fmt.Sprintf(":%s", cfg.Port),
+		Handler: mux,
+		ReadTimeout: 30 * time.Second,
 		WriteTimeout: 30 * time.Second,
-		IdleTimeout:  60 * time.Second,
+		IdleTimeout: 60 * time.Second,
 	}
 
 	// Graceful shutdown on SIGTERM / SIGINT.
@@ -160,8 +160,8 @@ func withShutdownGate(h http.Handler, shutting *atomic.Bool) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if shutting.Load() {
 			response.WriteError(w, http.StatusServiceUnavailable, response.ErrorBody{
-				Type:    "error",
-				Code:    "SHUTTING_DOWN",
+				Type: "error",
+				Code: "SHUTTING_DOWN",
 				Message: "gateway is shutting down; retry shortly",
 			})
 			return

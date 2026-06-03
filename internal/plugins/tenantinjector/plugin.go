@@ -3,27 +3,27 @@
 
 // Package tenantinjector implements the tenant-injector plugin v2 (WI-2yaa.PLG-4b).
 //
-// # Design (ADR PI2-yaa-0006 Decision 1)
+// # Design
 //
 // Tenant identity is derived from a validated JWT claim plus an HTTP lookup
-// against a tenant-directory service.  The client cannot influence the injected
+// against a tenant-directory service. The client cannot influence the injected
 // tenant ID (anti-smuggling: inbound inject.tenant_header is stripped before
 // injection).
 //
 // Per-request flow (executes after token-validator PLG-3):
-//  1. Strip any inbound inject.tenant_header from r.Header (anti-smuggling).
-//  2. Read principal from validated JWT claims (reqctx.JWTClaims, populated by PLG-3).
-//  3. Check per-principal LRU+TTL cache.
-//  4. On cache miss: call lookup.url via HTTP (singleflight-coalesced).
-//  5. Cache positive/negative result.
-//  6. Apply optional post-derivation allowlist.
-//  7. Inject derived tenant ID via inject.tenant_header (+ optional principal_header).
+// 1. Strip any inbound inject.tenant_header from r.Header (anti-smuggling).
+// 2. Read principal from validated JWT claims (reqctx.JWTClaims, populated by PLG-3).
+// 3. Check per-principal LRU+TTL cache.
+// 4. On cache miss: call lookup.url via HTTP (singleflight-coalesced).
+// 5. Cache positive/negative result.
+// 6. Apply optional post-derivation allowlist.
+// 7. Inject derived tenant ID via inject.tenant_header (+ optional principal_header).
 //
 // Failure codes are fully configurable via on_failure.* (defaults 503/503/403/401).
 // Boot fail-open: gateway starts even when lookup.url is unreachable; per-request
 // returns on_failure.lookup_network_error (503) from cold-start onward.
 //
-// Registration: init() → plugin.Register(&TenantInjector{}) per ADR PI2-yaa-0001 §3.
+// Registration: init() → plugin.Register(&TenantInjector{}) §3.
 package tenantinjector
 
 import (
@@ -55,23 +55,23 @@ func init() {
 // Sentinel errors for the lookup result type.
 var (
 	errPrincipalNotFound = errors.New("principal not found (404)")
-	errLookupTimeout     = errors.New("lookup timeout")
-	errLookupNetwork     = errors.New("lookup network error")
+	errLookupTimeout = errors.New("lookup timeout")
+	errLookupNetwork = errors.New("lookup network error")
 )
 
 // failureCodes holds the configured HTTP status codes for each failure mode.
 type failureCodes struct {
 	lookupNetworkError int
-	lookupTimeout      int
-	principalNotFound  int
-	claimMissing       int
+	lookupTimeout int
+	principalNotFound int
+	claimMissing int
 }
 
 // cacheEntry is one slot in the per-principal LRU cache.
 type cacheEntry struct {
-	key       string
-	tenantID  string // "" for negative entries
-	negative  bool
+	key string
+	tenantID string // "" for negative entries
+	negative bool
 	expiresAt time.Time
 }
 
@@ -79,24 +79,24 @@ type cacheEntry struct {
 // Zero value is invalid; always call Init before Handler.
 type TenantInjector struct {
 	// Validated config fields
-	principalClaim      string
-	lookupURL           string // contains {principal} placeholder
-	lookupMethod        string
-	lookupHeaders       map[string]string
-	bearerToken         string // empty when auth.mode != bearer
-	tenantIDField       string
-	injectTenantHeader  string
-	injectPrincipalHdr  string // "" disables principal injection
-	allowlist           map[string]struct{}
-	cacheTTL            time.Duration
-	negativeCacheTTL    time.Duration
-	failures            failureCodes
-	httpClient          *http.Client
+	principalClaim string
+	lookupURL string // contains {principal} placeholder
+	lookupMethod string
+	lookupHeaders map[string]string
+	bearerToken string // empty when auth.mode != bearer
+	tenantIDField string
+	injectTenantHeader string
+	injectPrincipalHdr string // "" disables principal injection
+	allowlist map[string]struct{}
+	cacheTTL time.Duration
+	negativeCacheTTL time.Duration
+	failures failureCodes
+	httpClient *http.Client
 
 	// Cache state
-	mu      sync.Mutex
+	mu sync.Mutex
 	lruList *list.List
-	lruMap  map[string]*list.Element
+	lruMap map[string]*list.Element
 	maxSize int
 
 	// Singleflight deduplicates concurrent first-fetches per principal.
@@ -109,19 +109,19 @@ func (ti *TenantInjector) Name() string { return "tenant-injector" }
 // Init validates configuration and prepares the plugin for use.
 //
 // Validation rules (returns non-nil error → gateway exit 1):
-//  1. principal.claim non-empty.
-//  2. lookup.url parseable AND contains exactly one {principal}.
-//  3. lookup.method ∈ {GET, POST}.
-//  4. lookup.timeout_ms > 0 AND ≤ 30000.
-//  5. lookup.auth.mode ∈ {none, bearer, mtls}; bearer: env non-empty; mtls: files readable.
-//  6. lookup.response.mode == "single"; tenant_id_field non-empty.
-//  7. lookup.cache.ttl_seconds > 0; max_entries > 0.
-//  8. inject.tenant_header non-empty.
-//  9. enabled: false → error (defence-in-depth).
+// 1. principal.claim non-empty.
+// 2. lookup.url parseable AND contains exactly one {principal}.
+// 3. lookup.method ∈ {GET, POST}.
+// 4. lookup.timeout_ms > 0 AND ≤ 30000.
+// 5. lookup.auth.mode ∈ {none, bearer, mtls}; bearer: env non-empty; mtls: files readable.
+// 6. lookup.response.mode == "single"; tenant_id_field non-empty.
+// 7. lookup.cache.ttl_seconds > 0; max_entries > 0.
+// 8. inject.tenant_header non-empty.
+// 9. enabled: false → error (defence-in-depth).
 func (ti *TenantInjector) Init(cfg plugin.PluginConfig) error {
 	if !cfg.GetBool("enabled") {
 		return fmt.Errorf("tenant-injector: plugin cannot be disabled " +
-			"(defence-in-depth per ADR PI2-yaa-0006)")
+			"(defence-in-depth)")
 	}
 
 	raw := cfg.Raw()
@@ -202,7 +202,7 @@ func (ti *TenantInjector) Init(cfg plugin.PluginConfig) error {
 		responseMode = "single"
 	}
 	if responseMode != "single" {
-		return fmt.Errorf("tenant-injector: lookup.response.mode must be \"single\" in PI2-yaa (got %q); multi-tenant is v0.3+", responseMode)
+		return fmt.Errorf("tenant-injector: lookup.response.mode must be \"single\" in v0.2 (got %q); multi-tenant is v0.3+", responseMode)
 	}
 	tenantIDField := mapStr(responseMap, "tenant_id_field")
 	if tenantIDField == "" {
@@ -240,9 +240,9 @@ func (ti *TenantInjector) Init(cfg plugin.PluginConfig) error {
 	failMap := submap(raw, "on_failure")
 	fc := failureCodes{
 		lookupNetworkError: mapIntDefault(failMap, "lookup_network_error", 503),
-		lookupTimeout:      mapIntDefault(failMap, "lookup_timeout", 503),
-		principalNotFound:  mapIntDefault(failMap, "principal_not_found", 403),
-		claimMissing:       mapIntDefault(failMap, "claim_missing", 401),
+		lookupTimeout: mapIntDefault(failMap, "lookup_timeout", 503),
+		principalNotFound: mapIntDefault(failMap, "principal_not_found", 403),
+		claimMissing: mapIntDefault(failMap, "claim_missing", 401),
 	}
 
 	// allowlist (post-derivation admission gate)
@@ -360,7 +360,7 @@ func (ti *TenantInjector) resolveTenant(principal string) (string, error) {
 	// even under 50 concurrent first-requests for the same principal.
 	type result struct {
 		tenantID string
-		err      error
+		err error
 	}
 	v, callErr, _ := ti.sfGroup.Do(principal, func() (any, error) {
 		tid, err := ti.doHTTPLookup(principal)
@@ -444,13 +444,13 @@ func (ti *TenantInjector) writeErr(w http.ResponseWriter, r *http.Request, statu
 	corrID := reqctx.CorrelationID(r.Context())
 	reqID := reqctx.RequestID(r.Context())
 	response.WriteError(w, status, response.ErrorBody{
-		Type:    "error",
-		Code:    code,
+		Type: "error",
+		Code: code,
 		Message: msg,
 		Trace: response.Trace{
 			CorrelationID: corrID,
-			RequestID:     reqID,
-			Dependency:    dep,
+			RequestID: reqID,
+			Dependency: dep,
 		},
 	})
 }

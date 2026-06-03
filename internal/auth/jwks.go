@@ -20,8 +20,8 @@ import (
 type jwk struct {
 	Kty string `json:"kty"`
 	Kid string `json:"kid"`
-	N   string `json:"n"`
-	E   string `json:"e"`
+	N string `json:"n"`
+	E string `json:"e"`
 }
 
 // jwkSet is the top-level JWKS document.
@@ -33,22 +33,22 @@ type jwkSet struct {
 // JWKS endpoint. Keys are cached in memory with a 5-minute TTL.
 // Used in production (GATEWAY_JWT_JWKS_URL env var).
 type JWKSValidator struct {
-	url    string
+	url string
 	client *http.Client
 
-	mu      sync.RWMutex
-	keys    map[string]*rsa.PublicKey
+	mu sync.RWMutex
+	keys map[string]*rsa.PublicKey
 	fetchAt time.Time
-	ttl     time.Duration
+	ttl time.Duration
 }
 
 // NewJWKSValidator creates a Validator that fetches RS256 public keys from url.
 func NewJWKSValidator(url string) *JWKSValidator {
 	return &JWKSValidator{
-		url:    url,
+		url: url,
 		client: &http.Client{Timeout: 10 * time.Second},
-		ttl:    5 * time.Minute,
-		keys:   make(map[string]*rsa.PublicKey),
+		ttl: 5 * time.Minute,
+		keys: make(map[string]*rsa.PublicKey),
 	}
 }
 

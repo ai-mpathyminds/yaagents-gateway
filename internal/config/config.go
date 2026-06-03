@@ -46,13 +46,13 @@ type Config struct {
 // Load reads gateway configuration from environment variables, applying defaults.
 func Load() Config {
 	return Config{
-		Port:             envOr("GATEWAY_PORT", "8120"),
-		RoutesFile:       envOr("GATEWAY_ROUTES_FILE", "routes.yaml"),
-		AuditLog:         envOr("GATEWAY_AUDIT_LOG", "stdout"),
-		PluginsFile:      os.Getenv("GATEWAY_PLUGINS_FILE"),
-		JWTSecret:        os.Getenv("GATEWAY_JWT_SECRET"),
-		JWTJWKSURL:       os.Getenv("GATEWAY_JWT_JWKS_URL"),
-		ShutdownTimeoutS:   envInt("GATEWAY_SHUTDOWN_TIMEOUT_S", 30),
+		Port: envOr("GATEWAY_PORT", "8120"),
+		RoutesFile: envOr("GATEWAY_ROUTES_FILE", "routes.yaml"),
+		AuditLog: envOr("GATEWAY_AUDIT_LOG", "stdout"),
+		PluginsFile: os.Getenv("GATEWAY_PLUGINS_FILE"),
+		JWTSecret: os.Getenv("GATEWAY_JWT_SECRET"),
+		JWTJWKSURL: os.Getenv("GATEWAY_JWT_JWKS_URL"),
+		ShutdownTimeoutS: envInt("GATEWAY_SHUTDOWN_TIMEOUT_S", 30),
 		LLMMaxSSEPerTenant: envInt("GATEWAY_LLM_MAX_SSE_PER_TENANT", 10),
 	}
 }

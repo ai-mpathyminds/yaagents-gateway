@@ -2,11 +2,11 @@
 // Copyright 2026 AimpathyMinds
 
 // PLG-6 integration tests:
-//   - withShutdownGate returns 503 after flag is set; passes through before.
-//   - Health routes (/healthz, /readyz, /metrics) are reachable without an
-//     Authorization header — they bypass the plugin chain entirely.
-//   - X-YAAgents-Profile: v0.2 is present on every proxied response.
-//   - SIGTERM: reverse-Shutdown order verified (via loader_test recorder type).
+// - withShutdownGate returns 503 after flag is set; passes through before.
+// - Health routes (/healthz, /readyz, /metrics) are reachable without an
+// Authorization header — they bypass the plugin chain entirely.
+// - X-YAAgents-Profile: v0.2 is present on every proxied response.
+// - SIGTERM: reverse-Shutdown order verified (via loader_test recorder type).
 //
 // Tests run in package main so they can reach the unexported withShutdownGate
 // function and the handleHealthz / makeReadyzHandler helpers.

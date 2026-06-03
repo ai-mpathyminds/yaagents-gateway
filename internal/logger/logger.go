@@ -7,8 +7,8 @@
 // [slog.Logger.With]:
 //
 //	reqLog := log.With(
-//	    slog.String("request_id", reqID),
-//	    slog.String("correlation_id", corrID),
+//	 slog.String("request_id", reqID),
+//	 slog.String("correlation_id", corrID),
 //	)
 package logger
 

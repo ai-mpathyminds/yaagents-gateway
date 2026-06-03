@@ -23,20 +23,20 @@ const ContentTypeError = "application/vnd.yaagents.error+json"
 // failure (e.g. "license-server"). Omitted from JSON when empty.
 type Trace struct {
 	CorrelationID string `json:"correlationId"`
-	RequestID     string `json:"requestId"`
-	Dependency    string `json:"dependency,omitempty"`
+	RequestID string `json:"requestId"`
+	Dependency string `json:"dependency,omitempty"`
 }
 
 // ErrorBody is the canonical shape for application/vnd.yaagents.error+json.
 // type must be one of: "forbidden", "failed_dependency", "error".
 type ErrorBody struct {
-	Type    string `json:"type"`
-	Code    string `json:"code"`
+	Type string `json:"type"`
+	Code string `json:"code"`
 	Message string `json:"message"`
 	// RetryAfter is the number of seconds the caller should wait before
 	// retrying. Present only on 429 responses (e.g. SSE concurrency limit).
-	RetryAfter int   `json:"retryAfter,omitempty"`
-	Trace      Trace `json:"trace"`
+	RetryAfter int `json:"retryAfter,omitempty"`
+	Trace Trace `json:"trace"`
 }
 
 // WriteError writes body as application/vnd.yaagents.error+json with the given

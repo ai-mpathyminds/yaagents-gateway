@@ -139,8 +139,8 @@ func TestHandler_ContentType(t *testing.T) {
 
 // headerCapture is a minimal http.ResponseWriter for testing Handler.
 type headerCapture struct {
-	header    headerMap
-	code      int
+	header headerMap
+	code int
 	bodyBytes bytes.Buffer
 }
 type headerMap map[string][]string
@@ -152,6 +152,6 @@ func (h headerMap) Get(k string) string {
 	return ""
 }
 
-func (hc *headerCapture) Header() http.Header       { return http.Header(hc.header) }
-func (hc *headerCapture) WriteHeader(code int)      { hc.code = code }
+func (hc *headerCapture) Header() http.Header { return http.Header(hc.header) }
+func (hc *headerCapture) WriteHeader(code int) { hc.code = code }
 func (hc *headerCapture) Write(b []byte) (int, error) { return hc.bodyBytes.Write(b) }

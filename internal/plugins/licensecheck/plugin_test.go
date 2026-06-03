@@ -28,8 +28,8 @@ func newPlugin(t *testing.T, licenseURL string, client *http.Client) *LicenseChe
 	t.Helper()
 	lc := &LicenseCheck{}
 	cfg := plugin.NewMapConfig(map[string]any{
-		"license_url":    licenseURL,
-		"header":         "X-License-Token",
+		"license_url": licenseURL,
+		"header": "X-License-Token",
 		"cache_ttl_seconds": 300,
 		"max_cache_size": 4, // small so LRU eviction is testable
 	})
@@ -135,7 +135,7 @@ func TestInit_CustomHeader(t *testing.T) {
 	lc := &LicenseCheck{}
 	_ = lc.Init(plugin.NewMapConfig(map[string]any{
 		"license_url": "https://lic.example.com",
-		"header":      "X-My-License",
+		"header": "X-My-License",
 	}))
 	if lc.header != "X-My-License" {
 		t.Errorf("header: got %q, want X-My-License", lc.header)

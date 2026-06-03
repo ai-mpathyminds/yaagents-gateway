@@ -218,8 +218,8 @@ func TestNewProxy_11thSSE_Returns429(t *testing.T) {
 	}
 
 	var errBody struct {
-		Code       string `json:"code"`
-		RetryAfter int    `json:"retryAfter"`
+		Code string `json:"code"`
+		RetryAfter int `json:"retryAfter"`
 	}
 	if err := json.Unmarshal(body11, &errBody); err != nil {
 		t.Fatalf("unmarshal 429 body: %v\nraw: %s", err, body11)

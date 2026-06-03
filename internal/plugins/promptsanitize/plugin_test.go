@@ -22,7 +22,7 @@ import (
 // containing a target substring.
 type warnCounter struct {
 	target string
-	count  atomic.Int64
+	count atomic.Int64
 }
 
 func (h *warnCounter) Enabled(_ context.Context, lvl slog.Level) bool {
@@ -35,7 +35,7 @@ func (h *warnCounter) Handle(_ context.Context, r slog.Record) error {
 	return nil
 }
 func (h *warnCounter) WithAttrs(_ []slog.Attr) slog.Handler { return h }
-func (h *warnCounter) WithGroup(_ string) slog.Handler      { return h }
+func (h *warnCounter) WithGroup(_ string) slog.Handler { return h }
 
 // setLogger installs h as the default slog logger for the duration of t and
 // restores the previous default in t.Cleanup.

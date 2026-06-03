@@ -6,13 +6,13 @@
 // Schema (PRD §5.4):
 //
 //	routes:
-//	  - id: <string, required, unique>
-//	    method: <HTTP verb, required>
-//	    path: <string, required; {param} placeholders allowed>
-//	    target: <URL, required>
-//	    roles: [<string>, ...]   # optional; empty = open to all authenticated callers
-//	    tenantRequired: <bool>   # optional, default false
-//	    audit: <bool>            # optional, default false
+//	 - id: <string, required, unique>
+//	 method: <HTTP verb, required>
+//	 path: <string, required; {param} placeholders allowed>
+//	 target: <URL, required>
+//	 roles: [<string>, ...] # optional; empty = open to all authenticated callers
+//	 tenantRequired: <bool> # optional, default false
+//	 audit: <bool> # optional, default false
 package routes
 
 import (
@@ -37,13 +37,13 @@ var placeholderRe = regexp.MustCompile(`\{([^{}]*)\}`)
 
 // Route is a single validated gateway route parsed from routes.yaml.
 type Route struct {
-	ID             string   `yaml:"id"`
-	Method         string   `yaml:"method"`
-	Path           string   `yaml:"path"`
-	Target         string   `yaml:"target"`
-	Roles          []string `yaml:"roles"`
-	TenantRequired bool     `yaml:"tenantRequired"`
-	Audit          bool     `yaml:"audit"`
+	ID string `yaml:"id"`
+	Method string `yaml:"method"`
+	Path string `yaml:"path"`
+	Target string `yaml:"target"`
+	Roles []string `yaml:"roles"`
+	TenantRequired bool `yaml:"tenantRequired"`
+	Audit bool `yaml:"audit"`
 
 	// Mode specifies the proxy mode for this route.
 	// "" (empty, default) = standard httputil.ReverseProxy (GW-4 path).
@@ -59,11 +59,11 @@ type Route struct {
 
 	// Plugins holds per-route plugin overrides (PRD §5.4.2). A plugin listed
 	// here may set enabled: false to bypass it for this route only. Disabling
-	// token-validator per-route is a fatal boot error (ADR PI2-yaa-0001 §5).
+	// token-validator per-route is a fatal boot error .
 	// Example YAML:
-	//   plugins:
-	//     tenant-injector:
-	//       enabled: false
+	// plugins:
+	// tenant-injector:
+	// enabled: false
 	Plugins map[string]map[string]any `yaml:"plugins"`
 
 	// PathParams holds the ordered placeholder names extracted from Path
@@ -79,9 +79,9 @@ type routeFile struct {
 
 // Load reads, parses and validates the route configuration at path.
 // It returns a non-nil error — and exits with a descriptive message — when:
-//   - the file cannot be read
-//   - the YAML is malformed
-//   - any route fails schema validation
+// - the file cannot be read
+// - the YAML is malformed
+// - any route fails schema validation
 //
 // Callers should treat a non-nil error as a fatal boot failure (fail-fast).
 func Load(path string) ([]Route, error) {
@@ -155,7 +155,7 @@ func validate(routes []Route) error {
 	}
 
 	if len(errs) > 0 {
-		return fmt.Errorf("invalid route configuration:\n  %s", strings.Join(errs, "\n  "))
+		return fmt.Errorf("invalid route configuration:\n %s", strings.Join(errs, "\n "))
 	}
 	return nil
 }

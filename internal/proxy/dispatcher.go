@@ -4,9 +4,9 @@
 // Package proxy implements the yaagents gateway route dispatcher:
 // per-route RBAC enforcement, typed-response passthrough via
 // httputil.ReverseProxy, X-YAAgents-Profile header injection, and optional
-// per-route audit logging + Prometheus metrics observation (WI-1yaa.GW-5).
+// per-route audit logging + Prometheus metrics observation.
 //
-// ADR: PI1-yaa-0001 (net/http only; no framework imports; no cross-product deps).
+// net/http only; no framework imports; no cross-product deps.
 package proxy
 
 import (
@@ -39,7 +39,7 @@ const ProfileVersion = "v0.2"
 // routeEntry pairs a validated Route with its pre-built HTTP handler.
 // The handler chain is: observe → EnforceTenant → RBAC → reverse-proxy.
 type routeEntry struct {
-	route   routes.Route
+	route routes.Route
 	handler http.Handler
 }
 
@@ -49,12 +49,12 @@ type routeEntry struct {
 // lim is the per-tenant SSE concurrency limiter (LLM-2); nil disables limiting.
 // met is the SSE Prometheus metrics instance (LLM-4); nil disables SSE metrics.
 type RouteDispatcher struct {
-	entries  []routeEntry
-	log      *slog.Logger
+	entries []routeEntry
+	log *slog.Logger
 	auditLog *audit.Logger
-	reg      *metrics.Registry
-	lim      *llm.Limiter
-	met      *llm.SSEMetrics
+	reg *metrics.Registry
+	lim *llm.Limiter
+	met *llm.SSEMetrics
 }
 
 // New builds a RouteDispatcher from a validated route list.
@@ -62,12 +62,12 @@ type RouteDispatcher struct {
 // Returns an error if any route's target URL cannot be parsed.
 func New(routeList []routes.Route, log *slog.Logger, auditLog *audit.Logger, reg *metrics.Registry, lim *llm.Limiter, met *llm.SSEMetrics) (*RouteDispatcher, error) {
 	d := &RouteDispatcher{
-		entries:  make([]routeEntry, 0, len(routeList)),
-		log:      log,
+		entries: make([]routeEntry, 0, len(routeList)),
+		log: log,
 		auditLog: auditLog,
-		reg:      reg,
-		lim:      lim,
-		met:      met,
+		reg: reg,
+		lim: lim,
+		met: met,
 	}
 	for _, r := range routeList {
 		handler, err := makeRouteHandler(r, log, lim, met)
@@ -87,10 +87,10 @@ func (d *RouteDispatcher) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 	entry, ok := d.matchEntry(r)
 	if !ok {
 		response.WriteError(w, http.StatusNotFound, response.ErrorBody{
-			Type:    "error",
-			Code:    "ROUTE_NOT_FOUND",
+			Type: "error",
+			Code: "ROUTE_NOT_FOUND",
 			Message: fmt.Sprintf("no route matched %s %s", r.Method, r.URL.Path),
-			Trace:   traceFromReq(r),
+			Trace: traceFromReq(r),
 		})
 		return
 	}
@@ -110,9 +110,9 @@ func (d *RouteDispatcher) matchEntry(r *http.Request) (routeEntry, bool) {
 // matchPath returns true when the route pattern (which may contain {param}
 // placeholders) matches requestPath.
 // Rules:
-//   - segment count must match
-//   - literal segments must match exactly (case-sensitive)
-//   - {param} segments match any non-empty path segment
+// - segment count must match
+// - literal segments must match exactly (case-sensitive)
+// - {param} segments match any non-empty path segment
 func matchPath(pattern, requestPath string) bool {
 	pSegs := splitPath(pattern)
 	rSegs := splitPath(requestPath)
@@ -150,7 +150,7 @@ func splitPath(path string) []string {
 // written by downstream handlers (including httputil.ReverseProxy).
 type responseRecorder struct {
 	http.ResponseWriter
-	code        int
+	code int
 	wroteHeader bool
 }
 
@@ -188,16 +188,16 @@ func (d *RouteDispatcher) observeHandler(h http.Handler, route routes.Route) htt
 		if route.Audit && d.auditLog != nil {
 			ctx := r.Context()
 			d.auditLog.Log(audit.Event{
-				Timestamp:     audit.Timestamp(),
-				RouteID:       route.ID,
-				Method:        r.Method,
-				Path:          r.URL.Path,
-				TenantID:      reqctx.TenantID(ctx),
-				ActorSubject:  reqctx.ActorSubject(ctx),
-				StatusCode:    rr.code,
-				LatencyMS:     latencyMS,
+				Timestamp: audit.Timestamp(),
+				RouteID: route.ID,
+				Method: r.Method,
+				Path: r.URL.Path,
+				TenantID: reqctx.TenantID(ctx),
+				ActorSubject: reqctx.ActorSubject(ctx),
+				StatusCode: rr.code,
+				LatencyMS: latencyMS,
 				CorrelationID: reqctx.CorrelationID(ctx),
-				RequestID:     reqctx.RequestID(ctx),
+				RequestID: reqctx.RequestID(ctx),
 			})
 		}
 	})
@@ -256,10 +256,10 @@ func makeRouteHandler(route routes.Route, log *slog.Logger, lim *llm.Limiter, me
 	rbacAndProxy := http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if err := enforceRoles(r, route.Roles); err != nil {
 			response.WriteError(w, http.StatusForbidden, response.ErrorBody{
-				Type:    "forbidden",
-				Code:    "INSUFFICIENT_ROLES",
+				Type: "forbidden",
+				Code: "INSUFFICIENT_ROLES",
 				Message: err.Error(),
-				Trace:   traceFromReq(r),
+				Trace: traceFromReq(r),
 			})
 			return
 		}
@@ -272,12 +272,12 @@ func makeRouteHandler(route routes.Route, log *slog.Logger, lim *llm.Limiter, me
 
 // buildProxy constructs an httputil.ReverseProxy for the given target URL.
 //
-//   - Director: rewrites the upstream URL (scheme + host) and injects
-//     tenant/actor/correlation headers. Does NOT re-encode the body or
-//     alter the method — typed-response passthrough is byte-level.
-//   - ModifyResponse: adds X-YAAgents-Profile to every upstream response
-//     without touching status, Content-Type, or body.
-//   - ErrorHandler: emits a 502 vendor-error when the upstream is unreachable.
+// - Director: rewrites the upstream URL (scheme + host) and injects
+// tenant/actor/correlation headers. Does NOT re-encode the body or
+// alter the method — typed-response passthrough is byte-level.
+// - ModifyResponse: adds X-YAAgents-Profile to every upstream response
+// without touching status, Content-Type, or body.
+// - ErrorHandler: emits a 502 vendor-error when the upstream is unreachable.
 func buildProxy(targetURL *url.URL, route routes.Route, log *slog.Logger) *httputil.ReverseProxy {
 	p := &httputil.ReverseProxy{
 		Director: func(req *http.Request) {
@@ -302,10 +302,10 @@ func buildProxy(targetURL *url.URL, route routes.Route, log *slog.Logger) *httpu
 			if r.Context().Err() == context.DeadlineExceeded {
 				// Execution timeout fired before upstream responded (LLM-3).
 				response.WriteError(w, http.StatusInternalServerError, response.ErrorBody{
-					Type:    "error",
-					Code:    "EXECUTION_TIMEOUT",
+					Type: "error",
+					Code: "EXECUTION_TIMEOUT",
 					Message: "execution timeout exceeded",
-					Trace:   traceFromReq(r),
+					Trace: traceFromReq(r),
 				})
 				return
 			}
@@ -315,10 +315,10 @@ func buildProxy(targetURL *url.URL, route routes.Route, log *slog.Logger) *httpu
 				slog.String("error", err.Error()),
 			)
 			response.WriteError(w, http.StatusBadGateway, response.ErrorBody{
-				Type:    "failed_dependency",
-				Code:    "UPSTREAM_UNAVAILABLE",
+				Type: "failed_dependency",
+				Code: "UPSTREAM_UNAVAILABLE",
 				Message: "upstream service did not respond",
-				Trace:   traceFromReq(r),
+				Trace: traceFromReq(r),
 			})
 		},
 	}
@@ -349,6 +349,6 @@ func traceFromReq(r *http.Request) response.Trace {
 	ctx := r.Context()
 	return response.Trace{
 		CorrelationID: reqctx.CorrelationID(ctx),
-		RequestID:     reqctx.RequestID(ctx),
+		RequestID: reqctx.RequestID(ctx),
 	}
 }

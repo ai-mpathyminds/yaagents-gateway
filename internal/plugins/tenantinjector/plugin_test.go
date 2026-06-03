@@ -30,21 +30,21 @@ func minimalCfg(lookupURL string) map[string]any {
 			"claim": "sub",
 		},
 		"lookup": map[string]any{
-			"url":        lookupURL,
-			"method":     "GET",
+			"url": lookupURL,
+			"method": "GET",
 			"timeout_ms": 500,
 			"response": map[string]any{
-				"mode":            "single",
+				"mode": "single",
 				"tenant_id_field": "tenant_id",
 			},
 			"cache": map[string]any{
-				"ttl_seconds":          300,
+				"ttl_seconds": 300,
 				"negative_ttl_seconds": 30,
-				"max_entries":          1000,
+				"max_entries": 1000,
 			},
 		},
 		"inject": map[string]any{
-			"tenant_header":    "X-Actor-Tenant",
+			"tenant_header": "X-Actor-Tenant",
 			"principal_header": "X-Actor-Principal",
 		},
 	}
@@ -183,8 +183,8 @@ func TestInit_Rule4_TimeoutMsTooLarge(t *testing.T) {
 func TestInit_Rule5_AuthBearerEnvEmpty(t *testing.T) {
 	cfg := minimalCfg("http://iam/api/v1/principals/{principal}/tenant")
 	cfg["lookup"].(map[string]any)["auth"] = map[string]any{
-		"mode":              "bearer",
-		"bearer_token_env":  "",
+		"mode": "bearer",
+		"bearer_token_env": "",
 	}
 	p := &tenantinjector.TenantInjector{}
 	if err := p.Init(plugin.NewMapConfig(cfg)); err == nil {
@@ -195,7 +195,7 @@ func TestInit_Rule5_AuthBearerEnvEmpty(t *testing.T) {
 func TestInit_Rule5_AuthBearerEnvUnset(t *testing.T) {
 	cfg := minimalCfg("http://iam/api/v1/principals/{principal}/tenant")
 	cfg["lookup"].(map[string]any)["auth"] = map[string]any{
-		"mode":             "bearer",
+		"mode": "bearer",
 		"bearer_token_env": "TENANT_INJECTOR_NO_SUCH_ENV_VAR_12345",
 	}
 	p := &tenantinjector.TenantInjector{}
@@ -218,7 +218,7 @@ func TestInit_Rule5_AuthUnknownMode(t *testing.T) {
 func TestInit_Rule6_ResponseModeNotSingle(t *testing.T) {
 	cfg := minimalCfg("http://iam/api/v1/principals/{principal}/tenant")
 	cfg["lookup"].(map[string]any)["response"] = map[string]any{
-		"mode":            "multi",
+		"mode": "multi",
 		"tenant_id_field": "tenant_id",
 	}
 	p := &tenantinjector.TenantInjector{}
@@ -230,8 +230,8 @@ func TestInit_Rule6_ResponseModeNotSingle(t *testing.T) {
 func TestInit_Rule7_TTLZero(t *testing.T) {
 	cfg := minimalCfg("http://iam/api/v1/principals/{principal}/tenant")
 	cfg["lookup"].(map[string]any)["cache"] = map[string]any{
-		"ttl_seconds":  0,
-		"max_entries":  1000,
+		"ttl_seconds": 0,
+		"max_entries": 1000,
 	}
 	p := &tenantinjector.TenantInjector{}
 	if err := p.Init(plugin.NewMapConfig(cfg)); err == nil {
@@ -488,9 +488,9 @@ func TestHandler_NegativeCache_NoReFetch(t *testing.T) {
 	srv, count := iamServer(t, map[string]string{}) // empty — all 404
 	cfg := minimalCfg(srv.URL + "/api/v1/principals/{principal}/tenant")
 	cfg["lookup"].(map[string]any)["cache"] = map[string]any{
-		"ttl_seconds":          300,
+		"ttl_seconds": 300,
 		"negative_ttl_seconds": 60,
-		"max_entries":          1000,
+		"max_entries": 1000,
 	}
 	p := initPlugin(t, cfg)
 
@@ -608,7 +608,7 @@ func TestHandler_CustomFailureCodes(t *testing.T) {
 	cfg := minimalCfg(srv.URL + "/api/v1/principals/{principal}/tenant")
 	cfg["on_failure"] = map[string]any{
 		"principal_not_found": 422,
-		"claim_missing":       400,
+		"claim_missing": 400,
 	}
 	p := initPlugin(t, cfg)
 
@@ -645,17 +645,17 @@ func TestName(t *testing.T) {
 func TestHandler_CacheEviction_LRU(t *testing.T) {
 	// Use a 2-slot cache to force eviction.
 	// LRU trace (head=MRU):
-	//   send(u1) → miss, IAM#1; cache: [u1]
-	//   send(u2) → miss, IAM#2; cache: [u2, u1]
-	//   send(u3) → miss, IAM#3; evict u1 (LRU); cache: [u3, u2]
-	//   send(u1) → miss, IAM#4; evict u2 (LRU); cache: [u1, u3]
-	//   send(u3) → HIT;  cache: [u3, u1]  → IAM count stays 4
+	// send(u1) → miss, IAM#1; cache: [u1]
+	// send(u2) → miss, IAM#2; cache: [u2, u1]
+	// send(u3) → miss, IAM#3; evict u1 (LRU); cache: [u3, u2]
+	// send(u1) → miss, IAM#4; evict u2 (LRU); cache: [u1, u3]
+	// send(u3) → HIT; cache: [u3, u1] → IAM count stays 4
 	srv, count := iamServer(t, map[string]string{"u1": "t1", "u2": "t2", "u3": "t3"})
 	cfg := minimalCfg(srv.URL + "/api/v1/principals/{principal}/tenant")
 	cfg["lookup"].(map[string]any)["cache"] = map[string]any{
-		"ttl_seconds":          300,
+		"ttl_seconds": 300,
 		"negative_ttl_seconds": 30,
-		"max_entries":          2,
+		"max_entries": 2,
 	}
 	p := initPlugin(t, cfg)
 
@@ -739,7 +739,7 @@ func TestHandler_CustomPrincipalClaim(t *testing.T) {
 		gotTenant = r.Header.Get("X-Actor-Tenant")
 	})
 	req := requestWithClaims(map[string]any{
-		"sub":   "should-be-ignored",
+		"sub": "should-be-ignored",
 		"email": "alice@example.com",
 	})
 	p.Handler(upstream).ServeHTTP(httptest.NewRecorder(), req)
@@ -756,20 +756,20 @@ func TestInit_Float64ConfigValues(t *testing.T) {
 	// Init must handle float64 in timeout_ms, ttl_seconds, max_entries.
 	srv, _ := iamServer(t, map[string]string{})
 	cfg := map[string]any{
-		"enabled":   true,
+		"enabled": true,
 		"principal": map[string]any{"claim": "sub"},
 		"lookup": map[string]any{
-			"url":        srv.URL + "/api/v1/principals/{principal}/tenant",
-			"method":     "GET",
+			"url": srv.URL + "/api/v1/principals/{principal}/tenant",
+			"method": "GET",
 			"timeout_ms": float64(500),
 			"response": map[string]any{
-				"mode":            "single",
+				"mode": "single",
 				"tenant_id_field": "tenant_id",
 			},
 			"cache": map[string]any{
-				"ttl_seconds":          float64(300),
+				"ttl_seconds": float64(300),
 				"negative_ttl_seconds": float64(30),
-				"max_entries":          float64(100),
+				"max_entries": float64(100),
 			},
 		},
 		"inject": map[string]any{
@@ -785,9 +785,9 @@ func TestHandler_CacheExpired_ReFetch(t *testing.T) {
 	srv, count := iamServer(t, map[string]string{"expire-user": "t-expire"})
 	cfg := minimalCfg(srv.URL + "/api/v1/principals/{principal}/tenant")
 	cfg["lookup"].(map[string]any)["cache"] = map[string]any{
-		"ttl_seconds":          1, // expire after 1 second
+		"ttl_seconds": 1, // expire after 1 second
 		"negative_ttl_seconds": 1,
-		"max_entries":          1000,
+		"max_entries": 1000,
 	}
 	p := initPlugin(t, cfg)
 

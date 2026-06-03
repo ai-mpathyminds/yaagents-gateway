@@ -29,18 +29,18 @@ func writeTempYAML(t *testing.T, content string) string {
 
 const validYAML = `
 routes:
-  - id: list-campaigns
-    method: GET
-    path: /campaigns
-    target: http://campaign-api:8080
-  - id: create-optimization
-    method: POST
-    path: /campaigns/{campaignId}/optimizations
-    target: http://campaign-api:8080
-    roles:
-      - campaign.manager
-    tenantRequired: true
-    audit: true
+ - id: list-campaigns
+ method: GET
+ path: /campaigns
+ target: http://campaign-api:8080
+ - id: create-optimization
+ method: POST
+ path: /campaigns/{campaignId}/optimizations
+ target: http://campaign-api:8080
+ roles:
+ - campaign.manager
+ tenantRequired: true
+ audit: true
 `
 
 func TestLoad_ValidRoutes(t *testing.T) {
@@ -81,10 +81,10 @@ func TestLoad_NoPlaceholders(t *testing.T) {
 func TestLoad_MultiplePlaceholders(t *testing.T) {
 	y := `
 routes:
-  - id: get-opt
-    method: GET
-    path: /campaigns/{campaignId}/optimizations/{optId}
-    target: http://api:8080
+ - id: get-opt
+ method: GET
+ path: /campaigns/{campaignId}/optimizations/{optId}
+ target: http://api:8080
 `
 	f := writeTempYAML(t, y)
 	rs, err := routes.Load(f)
@@ -102,14 +102,14 @@ routes:
 func TestLoad_DuplicateID(t *testing.T) {
 	y := `
 routes:
-  - id: dup
-    method: GET
-    path: /a
-    target: http://a:8080
-  - id: dup
-    method: POST
-    path: /b
-    target: http://b:8080
+ - id: dup
+ method: GET
+ path: /a
+ target: http://a:8080
+ - id: dup
+ method: POST
+ path: /b
+ target: http://b:8080
 `
 	f := writeTempYAML(t, y)
 	_, err := routes.Load(f)
@@ -124,9 +124,9 @@ routes:
 func TestLoad_MissingID(t *testing.T) {
 	y := `
 routes:
-  - method: GET
-    path: /a
-    target: http://a:8080
+ - method: GET
+ path: /a
+ target: http://a:8080
 `
 	f := writeTempYAML(t, y)
 	_, err := routes.Load(f)
@@ -138,9 +138,9 @@ routes:
 func TestLoad_MissingMethod(t *testing.T) {
 	y := `
 routes:
-  - id: test
-    path: /a
-    target: http://a:8080
+ - id: test
+ path: /a
+ target: http://a:8080
 `
 	f := writeTempYAML(t, y)
 	_, err := routes.Load(f)
@@ -152,10 +152,10 @@ routes:
 func TestLoad_InvalidMethod(t *testing.T) {
 	y := `
 routes:
-  - id: test
-    method: FETCH
-    path: /a
-    target: http://a:8080
+ - id: test
+ method: FETCH
+ path: /a
+ target: http://a:8080
 `
 	f := writeTempYAML(t, y)
 	_, err := routes.Load(f)
@@ -167,10 +167,10 @@ routes:
 func TestLoad_MethodCaseNormalized(t *testing.T) {
 	y := `
 routes:
-  - id: test
-    method: post
-    path: /a
-    target: http://a:8080
+ - id: test
+ method: post
+ path: /a
+ target: http://a:8080
 `
 	f := writeTempYAML(t, y)
 	rs, err := routes.Load(f)
@@ -185,9 +185,9 @@ routes:
 func TestLoad_MissingPath(t *testing.T) {
 	y := `
 routes:
-  - id: test
-    method: GET
-    target: http://a:8080
+ - id: test
+ method: GET
+ target: http://a:8080
 `
 	f := writeTempYAML(t, y)
 	_, err := routes.Load(f)
@@ -199,9 +199,9 @@ routes:
 func TestLoad_MissingTarget(t *testing.T) {
 	y := `
 routes:
-  - id: test
-    method: GET
-    path: /a
+ - id: test
+ method: GET
+ path: /a
 `
 	f := writeTempYAML(t, y)
 	_, err := routes.Load(f)
@@ -213,10 +213,10 @@ routes:
 func TestLoad_InvalidTarget(t *testing.T) {
 	y := `
 routes:
-  - id: test
-    method: GET
-    path: /a
-    target: not-a-url
+ - id: test
+ method: GET
+ path: /a
+ target: not-a-url
 `
 	f := writeTempYAML(t, y)
 	_, err := routes.Load(f)
@@ -228,10 +228,10 @@ routes:
 func TestLoad_EmptyPlaceholder(t *testing.T) {
 	y := `
 routes:
-  - id: test
-    method: GET
-    path: /a/{}
-    target: http://a:8080
+ - id: test
+ method: GET
+ path: /a/{}
+ target: http://a:8080
 `
 	f := writeTempYAML(t, y)
 	_, err := routes.Load(f)
@@ -243,10 +243,10 @@ routes:
 func TestLoad_DuplicatePlaceholder(t *testing.T) {
 	y := `
 routes:
-  - id: test
-    method: GET
-    path: /a/{id}/b/{id}
-    target: http://a:8080
+ - id: test
+ method: GET
+ path: /a/{id}/b/{id}
+ target: http://a:8080
 `
 	f := writeTempYAML(t, y)
 	_, err := routes.Load(f)
@@ -291,11 +291,11 @@ func TestLoad_RolesAndFlags(t *testing.T) {
 func TestLoad_ModeSSE_Parsed(t *testing.T) {
 	y := `
 routes:
-  - id: completions
-    method: POST
-    path: /completions
-    target: http://llm-api:8123
-    mode: sse
+ - id: completions
+ method: POST
+ path: /completions
+ target: http://llm-api:8123
+ mode: sse
 `
 	f := writeTempYAML(t, y)
 	rs, err := routes.Load(f)
@@ -310,12 +310,12 @@ routes:
 func TestLoad_ExecutionTimeoutSeconds_Parsed(t *testing.T) {
 	y := `
 routes:
-  - id: timed
-    method: POST
-    path: /completions
-    target: http://llm-api:8123
-    mode: sse
-    executionTimeoutSeconds: 30
+ - id: timed
+ method: POST
+ path: /completions
+ target: http://llm-api:8123
+ mode: sse
+ executionTimeoutSeconds: 30
 `
 	f := writeTempYAML(t, y)
 	rs, err := routes.Load(f)

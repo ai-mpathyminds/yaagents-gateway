@@ -10,7 +10,7 @@
 //
 // Security note: the gateway NEVER calls plugin.Open() or dlopen. Community
 // plugins are compiled into the operator binary via Go module imports at build
-// time (ADR PI2-yaa-0001 §3; PRD §10 [SEC]).
+// time .
 package plugin
 
 import (
@@ -21,7 +21,7 @@ import (
 // Plugin is the contract every gateway plugin must satisfy.
 //
 // Versioning is by Go module tag — no Version() method on the interface per
-// ADR PI2-yaa-0001 §1. If the interface ever needs a non-additive change, the
+// If the interface ever needs a non-additive change, the
 // module path bumps to gateway/plugin/v1.
 type Plugin interface {
 	// Name returns the unique, stable identifier for this plugin. It is used
@@ -34,12 +34,12 @@ type Plugin interface {
 	Init(cfg PluginConfig) error
 
 	// Handler wraps next to implement this plugin's middleware behaviour.
-	// Declaration order equals execution order (ADR PI2-yaa-0001 §2); the
+	// Declaration order equals execution order ; the
 	// gateway core composes handlers in that order.
 	Handler(next http.Handler) http.Handler
 
 	// Shutdown is called in reverse declaration order on SIGTERM
-	// (ADR PI2-yaa-0001 §4). ctx carries the graceful-shutdown deadline.
+	// . ctx carries the graceful-shutdown deadline.
 	Shutdown(ctx context.Context) error
 }
 

@@ -3,13 +3,13 @@
 
 // Package main — NFR-GW-1 static checks for secret hygiene.
 //
-// These tests run as part of the normal `go test ./...` suite.  They enforce
+// These tests run as part of the normal `go test ./...` suite. They enforce
 // the properties that trivy config scan and the REL-6 CI grep gate verify at
 // publish time, so regressions are caught locally on every `go test` run:
 //
-//  1. docker/gateway/Dockerfile contains no ENV instruction that sets a secret.
-//  2. docker/gateway/Dockerfile EXPOSEs the canonical yaagents-gateway port (8120).
-//  3. No .env file exists anywhere under the gateway module root.
+// 1. docker/gateway/Dockerfile contains no ENV instruction that sets a secret.
+// 2. docker/gateway/Dockerfile EXPOSEs the canonical yaagents-gateway port (8120).
+// 3. No .env file exists anywhere under the gateway module root.
 //
 // Path convention: tests in cmd/gateway/ resolve paths relative to the package
 // directory, which Go guarantees to be yaagents/gateway/cmd/gateway/ at test time.
@@ -44,7 +44,7 @@ func gatewayDockerfile(t *testing.T) string {
 }
 
 // secretENVRe matches any Dockerfile ENV instruction whose value contains a
-// credential placeholder.  Pattern covers:
+// credential placeholder. Pattern covers:
 //
 //	ENV GATEWAY_JWT_SECRET=<value>
 //	ENV SOME_TOKEN=abc
@@ -104,7 +104,7 @@ func TestDockerfileNoJWTSecretDefault(t *testing.T) {
 	}
 
 	// A substring search is sufficient: "GATEWAY_JWT_SECRET=" would only appear
-	// in an ENV instruction or in a comment.  Comments must not set the value either.
+	// in an ENV instruction or in a comment. Comments must not set the value either.
 	for _, line := range strings.Split(string(data), "\n") {
 		trimmed := strings.TrimSpace(line)
 		if strings.HasPrefix(trimmed, "#") {
@@ -117,7 +117,7 @@ func TestDockerfileNoJWTSecretDefault(t *testing.T) {
 }
 
 // TestNoEnvFileInGateway verifies that no .env file (or .env.* variant) exists
-// under the gateway module directory.  Such files must never be committed
+// under the gateway module directory. Such files must never be committed
 // (NFR-GW-1; .gitignore gate is belt-and-suspenders).
 func TestNoEnvFileInGateway(t *testing.T) {
 	// Gateway module root is two directories up from cmd/gateway/.

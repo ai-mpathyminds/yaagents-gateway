@@ -5,20 +5,20 @@
 //
 // # Stub status
 //
-// Full OTel span export is deferred to PI3-yaa or community
-// (ADR PI2-yaa-0005 Decision 2). This implementation:
-//   - Validates that endpoint, if configured, is a parseable absolute URL.
-//     A malformed endpoint is an operator config bug → Init returns non-nil
-//     error (gateway exit 1).
-//   - Emits a single structured warn log on the first request when
-//     enabled: true AND endpoint is empty (exporter not configured).
-//   - Records a no-op span placeholder via [noopTracer] (hand-rolled;
-//     go.opentelemetry.io/otel/trace/noop not yet in go.mod per
-//     ADR PI2-yaa-0005 Decision 1 — "else hand-rolled noop tracer").
-//   - Passes every request through to next.
+// Full implementation is deferred to a future release or community contribution
+// . This implementation:
+// - Validates that endpoint, if configured, is a parseable absolute URL.
+// A malformed endpoint is an operator config bug → Init returns non-nil
+// error (gateway exit 1).
+// - Emits a single structured warn log on the first request when
+// enabled: true AND endpoint is empty (exporter not configured).
+// - Records a no-op span placeholder via [noopTracer] (hand-rolled;
+// go.opentelemetry.io/otel/trace/noop not yet in go.mod per
+// "else hand-rolled noop tracer").
+// - Passes every request through to next.
 //
 // Registration: init() calls plugin.Register so the gateway wires this plugin
-// by import side-effect (ADR PI2-yaa-0001 §3; no plugin.Open / dlopen).
+// by import side-effect .
 package otelaudit
 
 import (
@@ -53,7 +53,7 @@ var tracer = noopTracer{}
 // OtelAudit is the otel-audit stub plugin.
 // Zero value is invalid; always call Init before Handler.
 type OtelAudit struct {
-	enabled  bool
+	enabled bool
 	endpoint string
 	warnOnce sync.Once
 }
@@ -92,7 +92,7 @@ func (a *OtelAudit) Handler(next http.Handler) http.Handler {
 			})
 		}
 
-		// Emit a no-op span placeholder; full export wired in PI3-yaa or community.
+		// Emit a no-op span placeholder; full export planned for a future release.
 		ctx, endSpan := tracer.startSpan(r.Context(), "yaagents.gateway.request")
 		defer endSpan()
 

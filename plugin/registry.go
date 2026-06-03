@@ -9,19 +9,19 @@ import (
 )
 
 var (
-	mu       sync.Mutex
+	mu sync.Mutex
 	registry []Plugin
-	byName   = map[string]struct{}{}
+	byName = map[string]struct{}{}
 )
 
 // Register adds p to the global plugin registry.
 //
 // Registration is idempotent on [Plugin.Name]: if a plugin with the same name
 // has already been registered, the second call is a no-op and emits a
-// warn-level log line ("first wins" semantics — ADR PI2-yaa-0001).
+// warn-level log line ("first wins" semantics
 //
 // Plugins call Register from an init() function; the gateway binary wires
-// plugins by import side-effect (no plugin.Open / dlopen — ADR PI2-yaa-0001 §3).
+// plugins by import side-effect (no plugin.Open / dlopen §3).
 func Register(p Plugin) {
 	mu.Lock()
 	defer mu.Unlock()

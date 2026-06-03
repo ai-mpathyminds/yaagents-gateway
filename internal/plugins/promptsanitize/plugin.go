@@ -6,19 +6,19 @@
 //
 // # Stub status
 //
-// Full prompt-injection defence is deferred to PI3-yaa or community
-// (ADR PI2-yaa-0005 Decision 2 / OQ-7). This implementation:
-//   - Stores configuration in Init (no-op validation beyond that).
-//   - Passes every request through to next without modification.
-//   - Emits a single structured warn log on the first request when
-//     enabled: true, using a [sync.Once] guard so the message is not
-//     spammed across concurrent requests.
+// Full implementation is deferred to a future release or community contribution
+// . This implementation:
+// - Stores configuration in Init (no-op validation beyond that).
+// - Passes every request through to next without modification.
+// - Emits a single structured warn log on the first request when
+// enabled: true, using a [sync.Once] guard so the message is not
+// spammed across concurrent requests.
 //
 // The plugin does NOT exit 1 at boot when enabled — log-and-pass-through
 // is the chosen behaviour per OQ-7 resolution.
 //
 // Registration: init() calls plugin.Register so the gateway wires this plugin
-// by import side-effect (ADR PI2-yaa-0001 §3; no plugin.Open / dlopen).
+// by import side-effect .
 package promptsanitize
 
 import (
@@ -37,7 +37,7 @@ func init() {
 // PromptSanitize is the prompt-sanitize stub plugin.
 // Zero value is valid (enabled defaults to false); Init stores config.
 type PromptSanitize struct {
-	enabled  bool
+	enabled bool
 	warnOnce sync.Once
 }
 
@@ -58,7 +58,7 @@ func (p *PromptSanitize) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		if p.enabled {
 			p.warnOnce.Do(func() {
-				slog.Warn("prompt-sanitize is a stub; full prompt-injection defence deferred to PI3-yaa or community")
+				slog.Warn("prompt-sanitize is a stub; full implementation deferred to future release or community")
 			})
 		}
 		next.ServeHTTP(w, r)

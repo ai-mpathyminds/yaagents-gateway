@@ -123,7 +123,7 @@ func TestContextMiddleware_Actor_ExtractedFromClaims(t *testing.T) {
 	// Simulate what auth.Middleware stores in context.
 	ctx0 := context.WithValue(req.Context(), auth.ClaimsKey, auth.Claims{
 		Subject: "user-xyz",
-		Roles:   []string{"admin", "editor"},
+		Roles: []string{"admin", "editor"},
 	})
 	_, ctx := runCtxMiddle(req.WithContext(ctx0))
 

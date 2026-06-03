@@ -21,16 +21,16 @@ type errorKey struct{ tenantID, routeID, errorKind string }
 //
 // No external prometheus library is used — text format is written directly,
 // consistent with the gateway's internal/metrics package convention
-// (ADR PI1-yaa-0001 §2: net/http only, no heavy framework deps).
+// .
 //
 // Two metric families (yaagents-canonical names, breaking from ai-platform):
 //
-//	yaagents_gateway_sse_connections_active  gauge   tenant_id × route_id
-//	yaagents_gateway_sse_errors_total        counter tenant_id × route_id × error_kind
+//	yaagents_gateway_sse_connections_active gauge tenant_id × route_id
+//	yaagents_gateway_sse_errors_total counter tenant_id × route_id × error_kind
 //
 // error_kind values: client_disconnect | upstream_error | timeout | limit_exceeded
 type SSEMetrics struct {
-	mu     sync.Mutex
+	mu sync.Mutex
 	active map[activeKey]int64
 	errors map[errorKey]int64
 }
@@ -67,10 +67,10 @@ func (m *SSEMetrics) Dec(tenantID, routeID string) {
 // Error increments the error counter for (tenantID, routeID, errorKind).
 //
 // Accepted errorKind values (LLM-4 spec):
-//   - "client_disconnect" — context.Canceled in SSE read loop
-//   - "upstream_error"    — non-context transport error
-//   - "timeout"           — context.DeadlineExceeded (execution timeout, LLM-3)
-//   - "limit_exceeded"    — concurrency limit rejection (LLM-2)
+// - "client_disconnect" — context.Canceled in SSE read loop
+// - "upstream_error" — non-context transport error
+// - "timeout" — context.DeadlineExceeded (execution timeout, LLM-3)
+// - "limit_exceeded" — concurrency limit rejection (LLM-2)
 func (m *SSEMetrics) Error(tenantID, routeID, errorKind string) {
 	m.mu.Lock()
 	m.errors[errorKey{tenantID, routeID, errorKind}]++

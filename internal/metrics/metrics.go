@@ -5,7 +5,7 @@
 // exposing them in Prometheus text format on GET /metrics.
 //
 // No external prometheus library is used — text format is written directly
-// per ADR PI1-yaa-0001 §2 (net/http only, no heavy framework deps).
+// §2 (net/http only, no heavy framework deps).
 //
 // Prometheus text format spec: https://prometheus.io/docs/instrumenting/exposition_formats/
 package metrics
@@ -20,22 +20,22 @@ import (
 
 // labelKey identifies one time series by route ID and HTTP status code string.
 type labelKey struct {
-	route  string
+	route string
 	status string
 }
 
 // Registry accumulates request observations keyed by route+status.
 // All methods are thread-safe.
 type Registry struct {
-	mu         sync.Mutex
-	counts     map[labelKey]int64
+	mu sync.Mutex
+	counts map[labelKey]int64
 	latencySum map[string]float64 // route ID → cumulative ms
 }
 
 // New returns an empty Registry ready for use.
 func New() *Registry {
 	return &Registry{
-		counts:     make(map[labelKey]int64),
+		counts: make(map[labelKey]int64),
 		latencySum: make(map[string]float64),
 	}
 }

@@ -3,14 +3,14 @@
 
 // Package loader implements the yaagents gateway plugin YAML loader.
 //
-// Boot sequence per PRD §6.4 and ADR PI2-yaa-0001:
-//  1. Plugin init() functions run as import side-effects (registration into the global registry).
-//  2. Load reads the plugins: YAML sequence in declaration order.
-//  3. The always-on assertion verifies token-validator is not disabled.
-//  4. GATEWAY_JWT_SECRET / GATEWAY_JWT_JWKS_URL are merged into token-validator config
-//     when the YAML block omits them (PRD §5.4.1 convenience overrides).
-//  5. Each listed plugin's Init(cfg) is called; a non-nil return is a fatal boot error.
-//  6. Loader.Chain(next) composes the per-request middleware chain in declaration order.
+// Boot sequence per PRD §6.4:
+// 1. Plugin init() functions run as import side-effects (registration into the global registry).
+// 2. Load reads the plugins: YAML sequence in declaration order.
+// 3. The always-on assertion verifies token-validator is not disabled.
+// 4. GATEWAY_JWT_SECRET / GATEWAY_JWT_JWKS_URL are merged into token-validator config
+// when the YAML block omits them (PRD §5.4.1 convenience overrides).
+// 5. Each listed plugin's Init(cfg) is called; a non-nil return is a fatal boot error.
+// 6. Loader.Chain(next) composes the per-request middleware chain in declaration order.
 package loader
 
 import (
@@ -31,7 +31,7 @@ const tokenValidatorName = "token-validator"
 // entry holds one plugin's resolved name and its configuration map (name key removed).
 type entry struct {
 	name string
-	cfg  map[string]any
+	cfg map[string]any
 }
 
 // pluginsEnvelope is the YAML envelope used for both standalone plugin files and
@@ -43,7 +43,7 @@ type pluginsEnvelope struct {
 // Loader holds the ordered, initialized plugin list and is ready for request-time
 // chain composition and graceful-shutdown orchestration.
 type Loader struct {
-	log     *slog.Logger
+	log *slog.Logger
 	ordered []plugin.Plugin
 }
 
@@ -122,13 +122,13 @@ func (l *Loader) ChainFor(perRoutePlugins map[string]map[string]any, next http.H
 
 // ValidateRouteOverrides returns a fatal boot error if any route's plugins:
 // block disables token-validator. token-validator is the always-on security
-// floor (ADR PI2-yaa-0001 §5) and must run on every proxied request.
+// floor and must run on every proxied request.
 func ValidateRouteOverrides(routeList []routes.Route) error {
 	for _, r := range routeList {
 		if override, ok := r.Plugins[tokenValidatorName]; ok {
 			if en, ok := override["enabled"].(bool); ok && !en {
 				return fmt.Errorf("route %q: token-validator cannot be disabled per-route "+
-					"(ADR PI2-yaa-0001 §5 always-on invariant)", r.ID)
+					"", r.ID)
 			}
 		}
 	}
@@ -136,7 +136,7 @@ func ValidateRouteOverrides(routeList []routes.Route) error {
 }
 
 // Shutdown calls each plugin's Shutdown in reverse declaration order
-// (ADR PI2-yaa-0001 §4). Errors are logged but do not abort remaining shutdowns.
+// . Errors are logged but do not abort remaining shutdowns.
 func (l *Loader) Shutdown(ctx context.Context) {
 	for i := len(l.ordered) - 1; i >= 0; i-- {
 		p := l.ordered[i]
@@ -182,7 +182,7 @@ func readEntries(pluginsPath, routesPath string) ([]entry, error) {
 
 // assertTokenValidatorAlwaysOn returns an error when the token-validator entry
 // is present in the plugins sequence but has enabled: false.
-// Per ADR PI2-yaa-0001 §5, token-validator is the security floor and cannot be disabled.
+// token-validator is the security floor and cannot be disabled.
 func assertTokenValidatorAlwaysOn(entries []entry) error {
 	for _, e := range entries {
 		if e.name != tokenValidatorName {

@@ -3,9 +3,9 @@
 
 // Package auth provides JWT bearer validation middleware for the yaagents gateway.
 //
-// Two validation modes per ADR PI1-yaa-0001 §3:
-//   - HS256: symmetric secret via GATEWAY_JWT_SECRET (dev/demo default)
-//   - RS256: public-key via GATEWAY_JWT_JWKS_URL with cached JWKS (production)
+// Two validation modes §3:
+// - HS256: symmetric secret via GATEWAY_JWT_SECRET (dev/demo default)
+// - RS256: public-key via GATEWAY_JWT_JWKS_URL with cached JWKS (production)
 //
 // JWKS takes precedence when both env vars are set (warn-logged).
 // Missing or invalid bearer token → 401 application/vnd.yaagents.error+json.
@@ -94,12 +94,12 @@ func writeAuthError(w http.ResponseWriter, r *http.Request, code, msg string) {
 		reqID = newUUID()
 	}
 	response.WriteError(w, http.StatusUnauthorized, response.ErrorBody{
-		Type:    "error",
-		Code:    code,
+		Type: "error",
+		Code: code,
 		Message: msg,
 		Trace: response.Trace{
 			CorrelationID: corrID,
-			RequestID:     reqID,
+			RequestID: reqID,
 		},
 	})
 }

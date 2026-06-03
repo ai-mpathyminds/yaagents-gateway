@@ -16,10 +16,10 @@ import (
 // stub is a minimal Plugin used to exercise the registry.
 type stub struct{ name string }
 
-func (s *stub) Name() string                           { return s.name }
-func (s *stub) Init(_ PluginConfig) error              { return nil }
+func (s *stub) Name() string { return s.name }
+func (s *stub) Init(_ PluginConfig) error { return nil }
 func (s *stub) Handler(next http.Handler) http.Handler { return next }
-func (s *stub) Shutdown(_ context.Context) error       { return nil }
+func (s *stub) Shutdown(_ context.Context) error { return nil }
 
 // resetRegistry clears the global registry for the lifetime of t.
 // It also registers a t.Cleanup to restore the empty state after the test.

@@ -8,7 +8,7 @@
 // Usage:
 //
 //	ctx = reqctx.WithCorrelationID(ctx, corrID)
-//	id  := reqctx.CorrelationID(ctx)
+//	id := reqctx.CorrelationID(ctx)
 package reqctx
 
 import (

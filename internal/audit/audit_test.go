@@ -14,16 +14,16 @@ func TestLogger_WritesValidJSON(t *testing.T) {
 	var buf bytes.Buffer
 	l := New(&buf)
 	l.Log(Event{
-		Timestamp:     "2026-05-17T00:00:00Z",
-		RouteID:       "r1",
-		Method:        "POST",
-		Path:          "/campaigns/cmp-1/optimizations",
-		TenantID:      "tenant-a",
-		ActorSubject:  "user-1",
-		StatusCode:    200,
-		LatencyMS:     12.5,
+		Timestamp: "2026-05-17T00:00:00Z",
+		RouteID: "r1",
+		Method: "POST",
+		Path: "/campaigns/cmp-1/optimizations",
+		TenantID: "tenant-a",
+		ActorSubject: "user-1",
+		StatusCode: 200,
+		LatencyMS: 12.5,
 		CorrelationID: "corr-001",
-		RequestID:     "req-001",
+		RequestID: "req-001",
 	})
 
 	var got Event

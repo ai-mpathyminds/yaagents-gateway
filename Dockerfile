@@ -33,7 +33,6 @@ HEALTHCHECK --interval=10s --timeout=5s --start-period=5s --retries=3 \
 
 USER gateway
 # Portfolio port allocation: yaagents-gateway = 8120
-# (ref: .claude/rules/portfolio-conventions.md §Port Allocation)
 EXPOSE 8120
 
 ENTRYPOINT ["/app/gateway"]

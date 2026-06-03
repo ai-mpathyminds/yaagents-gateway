@@ -24,9 +24,9 @@ import (
 
 // recorder captures Init calls and can record Handler + Shutdown invocation order.
 type recorder struct {
-	name      string
-	initErr   error
-	gotCfg    plugin.PluginConfig
+	name string
+	initErr error
+	gotCfg plugin.PluginConfig
 	handOrder *[]string // set per-test; nil = don't record
 	shutOrder *[]string // set per-test; nil = don't record
 }
@@ -53,9 +53,9 @@ func (r *recorder) Shutdown(_ context.Context) error {
 
 // Package-level recorder singletons (registered once in TestMain).
 var (
-	recA  = &recorder{name: "test-plg-a"}
-	recB  = &recorder{name: "test-plg-b"}
-	recC  = &recorder{name: "test-plg-c"}
+	recA = &recorder{name: "test-plg-a"}
+	recB = &recorder{name: "test-plg-b"}
+	recC = &recorder{name: "test-plg-c"}
 	recTV = &recorder{name: tokenValidatorName}
 )
 
@@ -99,10 +99,10 @@ func writeYAML(t *testing.T, content string) string {
 func TestReadEntries_HappyPath(t *testing.T) {
 	path := writeYAML(t, `
 plugins:
-  - name: test-plg-a
-    enabled: true
-  - name: test-plg-b
-    timeout: 30
+ - name: test-plg-a
+ enabled: true
+ - name: test-plg-b
+ timeout: 30
 `)
 	entries, err := readEntries("", path)
 	if err != nil {
@@ -126,14 +126,14 @@ plugins:
 func TestReadEntries_StandalonePluginsFile(t *testing.T) {
 	pluginsPath := writeYAML(t, `
 plugins:
-  - name: test-plg-a
+ - name: test-plg-a
 `)
 	routesPath := writeYAML(t, `
 routes:
-  - id: r1
-    method: GET
-    path: /foo
-    target: http://localhost:8080
+ - id: r1
+ method: GET
+ path: /foo
+ target: http://localhost:8080
 `)
 	entries, err := readEntries(pluginsPath, routesPath)
 	if err != nil {
@@ -147,10 +147,10 @@ routes:
 func TestReadEntries_NoPluginsBlock(t *testing.T) {
 	path := writeYAML(t, `
 routes:
-  - id: r1
-    method: GET
-    path: /foo
-    target: http://localhost:8080
+ - id: r1
+ method: GET
+ path: /foo
+ target: http://localhost:8080
 `)
 	entries, err := readEntries("", path)
 	if err != nil {
@@ -179,7 +179,7 @@ func TestReadEntries_InvalidYAML(t *testing.T) {
 func TestReadEntries_MissingNameField(t *testing.T) {
 	path := writeYAML(t, `
 plugins:
-  - enabled: true
+ - enabled: true
 `)
 	_, err := readEntries("", path)
 	if err == nil {
@@ -301,8 +301,8 @@ func TestLoad_HappyPath(t *testing.T) {
 	reset()
 	path := writeYAML(t, `
 plugins:
-  - name: test-plg-a
-    key: value
+ - name: test-plg-a
+ key: value
 `)
 	ldr, err := Load(noopLog(), "", path, "", "")
 	if err != nil {
@@ -323,8 +323,8 @@ func TestLoad_TokenValidatorDisabled_Error(t *testing.T) {
 	reset()
 	path := writeYAML(t, `
 plugins:
-  - name: token-validator
-    enabled: false
+ - name: token-validator
+ enabled: false
 `)
 	_, err := Load(noopLog(), "", path, "", "")
 	if err == nil {
@@ -342,7 +342,7 @@ func TestLoad_PluginInitError_ContainsPluginName(t *testing.T) {
 
 	path := writeYAML(t, `
 plugins:
-  - name: test-plg-a
+ - name: test-plg-a
 `)
 	_, err := Load(noopLog(), "", path, "", "")
 	if err == nil {
@@ -357,8 +357,8 @@ func TestLoad_UnregisteredPlugin_Skipped(t *testing.T) {
 	reset()
 	path := writeYAML(t, `
 plugins:
-  - name: no-such-plugin
-  - name: test-plg-a
+ - name: no-such-plugin
+ - name: test-plg-a
 `)
 	ldr, err := Load(noopLog(), "", path, "", "")
 	if err != nil {
@@ -374,8 +374,8 @@ func TestLoad_EnvVarSecret_MergedIntoTokenValidator(t *testing.T) {
 	reset()
 	path := writeYAML(t, `
 plugins:
-  - name: token-validator
-    enabled: true
+ - name: token-validator
+ enabled: true
 `)
 	_, err := Load(noopLog(), "", path, "injected-secret", "")
 	if err != nil {
@@ -393,8 +393,8 @@ func TestLoad_EnvVarJWKS_MergedIntoTokenValidator(t *testing.T) {
 	reset()
 	path := writeYAML(t, `
 plugins:
-  - name: token-validator
-    enabled: true
+ - name: token-validator
+ enabled: true
 `)
 	_, err := Load(noopLog(), "", path, "", "https://idp.example.com/jwks")
 	if err != nil {
@@ -421,7 +421,7 @@ func TestLoad_StandalonePluginsFile(t *testing.T) {
 	reset()
 	pluginsPath := writeYAML(t, `
 plugins:
-  - name: test-plg-b
+ - name: test-plg-b
 `)
 	routesPath := writeYAML(t, `routes: []`)
 	_, err := Load(noopLog(), pluginsPath, routesPath, "", "")
@@ -447,8 +447,8 @@ func TestChain_DeclarationOrder(t *testing.T) {
 
 	path := writeYAML(t, `
 plugins:
-  - name: test-plg-a
-  - name: test-plg-b
+ - name: test-plg-a
+ - name: test-plg-b
 `)
 	ldr, err := Load(noopLog(), "", path, "", "")
 	if err != nil {
@@ -478,7 +478,7 @@ func TestChain_SinglePlugin(t *testing.T) {
 
 	path := writeYAML(t, `
 plugins:
-  - name: test-plg-c
+ - name: test-plg-c
 `)
 	ldr, err := Load(noopLog(), "", path, "", "")
 	if err != nil {
@@ -515,7 +515,7 @@ func TestShutdown_ReverseOrder(t *testing.T) {
 	s3 := &recorder{name: "shut-3", shutOrder: &shutOrder}
 
 	ldr := &Loader{
-		log:     noopLog(),
+		log: noopLog(),
 		ordered: []plugin.Plugin{s1, s2, s3},
 	}
 	ldr.Shutdown(context.Background())
@@ -538,7 +538,7 @@ func TestShutdown_ContinuesPastErrors(t *testing.T) {
 	good := &recorder{name: "good-plugin", shutOrder: &shutOrder}
 
 	ldr := &Loader{
-		log:     noopLog(),
+		log: noopLog(),
 		ordered: []plugin.Plugin{ep, good},
 	}
 	ldr.Shutdown(context.Background())
@@ -569,7 +569,7 @@ func TestChainFor_DeclarationOrder_4Plugins(t *testing.T) {
 	cm := &recorder{name: "community-plugin", handOrder: &order}
 
 	ldr := &Loader{
-		log:     noopLog(),
+		log: noopLog(),
 		ordered: []plugin.Plugin{tv, ti, lc, cm},
 	}
 
@@ -603,7 +603,7 @@ func TestChainFor_PerRouteOverride_SkipsTenantInjector(t *testing.T) {
 	lc := &recorder{name: "license-check", handOrder: &order}
 
 	ldr := &Loader{
-		log:     noopLog(),
+		log: noopLog(),
 		ordered: []plugin.Plugin{tv, ti, lc},
 	}
 
@@ -643,7 +643,7 @@ func TestChainFor_PerRouteOverride_OtherRoutesUnaffected(t *testing.T) {
 	lc := &recorder{name: "license-check"}
 
 	ldr := &Loader{
-		log:     noopLog(),
+		log: noopLog(),
 		ordered: []plugin.Plugin{ti, lc},
 	}
 
@@ -707,9 +707,9 @@ func TestChainFor_EmptyOverrides_AllPluginsRun(t *testing.T) {
 func TestValidateRouteOverrides_TokenValidatorDisabled_Error(t *testing.T) {
 	routeList := []routes.Route{
 		{
-			ID:     "api-route",
+			ID: "api-route",
 			Method: "GET",
-			Path:   "/things",
+			Path: "/things",
 			Target: "http://upstream:8080",
 			Plugins: map[string]map[string]any{
 				tokenValidatorName: {"enabled": false},

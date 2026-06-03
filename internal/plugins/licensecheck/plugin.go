@@ -5,7 +5,7 @@
 //
 // The plugin reads a product-license token from a configured request header,
 // verifies it against a remote license server URL, and caches results with a
-// bounded LRU cache.  Requests with an invalid or unverifiable token receive a
+// bounded LRU cache. Requests with an invalid or unverifiable token receive a
 // 403 application/vnd.yaagents.error+json response; next is not called.
 //
 // On network errors (including HTTP client timeout) the 403 trace includes
@@ -14,14 +14,14 @@
 //
 // Configuration keys:
 //
-//	license_url:         required — absolute http/https URL of the license server
-//	header:              request header carrying the token (default: X-License-Token)
-//	cache_ttl_seconds:   how long to cache a successful HTTP response (default: 300)
-//	max_cache_size:      maximum number of cached entries — LRU eviction (default: 1024)
-//	timeout_seconds:     HTTP client hard timeout per attempt (default: 5)
+//	license_url: required — absolute http/https URL of the license server
+//	header: request header carrying the token (default: X-License-Token)
+//	cache_ttl_seconds: how long to cache a successful HTTP response (default: 300)
+//	max_cache_size: maximum number of cached entries — LRU eviction (default: 1024)
+//	timeout_seconds: HTTP client hard timeout per attempt (default: 5)
 //
 // Registration: init() calls plugin.Register so the gateway wires this plugin
-// by import side-effect (ADR PI2-yaa-0001 §3; no plugin.Open / dlopen).
+// by import side-effect .
 package licensecheck
 
 import (
@@ -45,23 +45,23 @@ func init() {
 
 // cacheEntry is one entry in the LRU cache.
 type cacheEntry struct {
-	token    string
-	valid    bool
+	token string
+	valid bool
 	expireAt time.Time
 }
 
 // LicenseCheck is the license-check plugin.
 // Zero value is invalid; always call Init before Handler.
 type LicenseCheck struct {
-	header     string
+	header string
 	licenseURL string
-	cacheTTL   time.Duration
-	maxSize    int
+	cacheTTL time.Duration
+	maxSize int
 	httpClient *http.Client
 
-	mu      sync.Mutex
+	mu sync.Mutex
 	lruList *list.List
-	lruMap  map[string]*list.Element // token → *cacheEntry element
+	lruMap map[string]*list.Element // token → *cacheEntry element
 }
 
 // Name returns the canonical plugin identifier.
@@ -70,7 +70,7 @@ func (lc *LicenseCheck) Name() string { return "license-check" }
 // Init validates configuration and initialises the plugin.
 //
 // Returns a non-nil error (gateway exit 1) when:
-//   - license_url is absent or not a valid absolute http/https URL
+// - license_url is absent or not a valid absolute http/https URL
 func (lc *LicenseCheck) Init(cfg plugin.PluginConfig) error {
 	licURL := cfg.GetString("license_url")
 	if licURL == "" {
@@ -115,13 +115,13 @@ func (lc *LicenseCheck) Init(cfg plugin.PluginConfig) error {
 // Handler returns an http.Handler that enforces license token validity.
 //
 // Execution order:
-//  1. Read token from r.Header.Get(lc.header).
-//  2. Consult LRU cache; on hit serve from cache.
-//  3. On cache miss, call lc.verify against the license server.
-//  4. Cache the result when the server returned an HTTP response (valid or not).
-//     Network errors are not cached so the next request retries.
-//  5. On invalid / network-error → 403 vendor-error body (next not called).
-//  6. On valid → call next.
+// 1. Read token from r.Header.Get(lc.header).
+// 2. Consult LRU cache; on hit serve from cache.
+// 3. On cache miss, call lc.verify against the license server.
+// 4. Cache the result when the server returned an HTTP response (valid or not).
+// Network errors are not cached so the next request retries.
+// 5. On invalid / network-error → 403 vendor-error body (next not called).
+// 6. On valid → call next.
 func (lc *LicenseCheck) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
 		token := r.Header.Get(lc.header)
@@ -135,10 +135,10 @@ func (lc *LicenseCheck) Handler(next http.Handler) http.Handler {
 				return
 			}
 			response.WriteError(w, http.StatusForbidden, response.ErrorBody{
-				Type:    "forbidden",
-				Code:    "license_invalid",
+				Type: "forbidden",
+				Code: "license_invalid",
 				Message: "license token is not valid",
-				Trace:   response.Trace{CorrelationID: corrID, RequestID: reqID},
+				Trace: response.Trace{CorrelationID: corrID, RequestID: reqID},
 			})
 			return
 		}
@@ -158,13 +158,13 @@ func (lc *LicenseCheck) Handler(next http.Handler) http.Handler {
 		// Network/timeout error (dep == "license-server") — do not cache.
 
 		response.WriteError(w, http.StatusForbidden, response.ErrorBody{
-			Type:    "forbidden",
-			Code:    "license_invalid",
+			Type: "forbidden",
+			Code: "license_invalid",
 			Message: "license verification failed",
 			Trace: response.Trace{
 				CorrelationID: corrID,
-				RequestID:     reqID,
-				Dependency:    dep,
+				RequestID: reqID,
+				Dependency: dep,
 			},
 		})
 	})
@@ -257,8 +257,8 @@ func (lc *LicenseCheck) cacheSet(token string, valid bool) {
 	}
 
 	entry := &cacheEntry{
-		token:    token,
-		valid:    valid,
+		token: token,
+		valid: valid,
 		expireAt: time.Now().Add(lc.cacheTTL),
 	}
 	elem := lc.lruList.PushFront(entry)

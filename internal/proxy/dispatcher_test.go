@@ -224,9 +224,9 @@ func TestDispatcher_PathWithParam_Matched(t *testing.T) {
 	defer upstream.Close()
 
 	route := routes.Route{
-		ID:     "r6",
+		ID: "r6",
 		Method: "POST",
-		Path:   "/campaigns/{campaignId}/optimizations",
+		Path: "/campaigns/{campaignId}/optimizations",
 		Target: upstream.URL,
 	}
 	d := makeDispatcher(t, upstream, route)
@@ -348,7 +348,7 @@ func TestMatchPath_MultiParam(t *testing.T) {
 
 func TestSplitPath(t *testing.T) {
 	cases := []struct {
-		in   string
+		in string
 		want []string
 	}{
 		{"/foo/bar", []string{"foo", "bar"}},
@@ -410,7 +410,7 @@ func TestBuildProxy_DirectorSetsSchemeAndHost(t *testing.T) {
 	}
 }
 
-// --- Audit + Metrics observation tests (WI-1yaa.GW-5) ---
+// --- Audit + Metrics observation tests ---
 
 // TestDispatcher_AuditTrue_EmitsEvent verifies that a route with audit:true
 // causes one JSON audit event to be written after the request completes.
@@ -552,11 +552,11 @@ func TestDispatcher_SSEMode_ReachesUpstream(t *testing.T) {
 	defer upstream.Close()
 
 	route := routes.Route{
-		ID:     "sse-route",
+		ID: "sse-route",
 		Method: "POST",
-		Path:   "/completions",
+		Path: "/completions",
 		Target: upstream.URL,
-		Mode:   "sse",
+		Mode: "sse",
 	}
 	d := makeDispatcher(t, upstream, route)
 
@@ -589,9 +589,9 @@ func TestDispatcher_NonSSERoute_DoesNotTouchLimiter(t *testing.T) {
 
 	lim := llm.NewLimiter(10)
 	route := routes.Route{
-		ID:     "std-no-limiter",
+		ID: "std-no-limiter",
 		Method: "GET",
-		Path:   "/items",
+		Path: "/items",
 		Target: upstream.URL,
 		// Mode is empty — standard httputil.ReverseProxy, limiter not touched.
 	}
@@ -611,7 +611,7 @@ func TestDispatcher_NonSSERoute_DoesNotTouchLimiter(t *testing.T) {
 
 // TestDispatcher_SSEMode_StandardRouteUnchanged verifies that a standard route
 // (mode == "") still proxies correctly after the SSE-mode branch was added to
-// makeRouteHandler (PI1-yaa GW-4 regression gate for LLM-1).
+// makeRouteHandler helper for route dispatch tests.
 func TestDispatcher_SSEMode_StandardRouteUnchanged(t *testing.T) {
 	const respBody = `{"status":"ok"}`
 	upstream := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
@@ -622,9 +622,9 @@ func TestDispatcher_SSEMode_StandardRouteUnchanged(t *testing.T) {
 	defer upstream.Close()
 
 	route := routes.Route{
-		ID:     "std-route",
+		ID: "std-route",
 		Method: "GET",
-		Path:   "/items",
+		Path: "/items",
 		Target: upstream.URL,
 		// Mode is intentionally empty — standard proxy path.
 	}
@@ -658,10 +658,10 @@ func TestDispatcher_NonSSEExecutionTimeout_Returns500(t *testing.T) {
 	defer upstream.Close()
 
 	route := routes.Route{
-		ID:                      "timeout-route",
-		Method:                  "GET",
-		Path:                    "/slow",
-		Target:                  upstream.URL,
+		ID: "timeout-route",
+		Method: "GET",
+		Path: "/slow",
+		Target: upstream.URL,
 		ExecutionTimeoutSeconds: 1, // fires at 1 s; upstream stalls 10 s
 	}
 	d := makeDispatcher(t, upstream, route)

@@ -8,7 +8,7 @@ import (
 	"sync/atomic"
 )
 
-// Limiter is a per-tenant SSE concurrency counter (WI-2yaa.LLM-2).
+// Limiter is a per-tenant SSE concurrency counter.
 //
 // It tracks the number of active SSE connections per tenant using a
 // sync.Map[string]*atomic.Int64. The limit is configured at construction time
@@ -20,7 +20,7 @@ import (
 // increments under concurrent load.
 type Limiter struct {
 	maxPerTenant int64
-	counts       sync.Map // map[string]*atomic.Int64
+	counts sync.Map // map[string]*atomic.Int64
 }
 
 // NewLimiter returns a Limiter that allows at most maxPerTenant concurrent SSE

@@ -7,7 +7,7 @@
 //
 // Activation is config-driven: a route declares mode: sse in routes.yaml to
 // opt into SSE pipe-and-flush; standard JSON routes pay no cost (the SSE code
-// path is dormant when no route activates it — ADR PI2-yaa-0002 §1).
+// path is dormant when no route activates it §1).
 package llm
 
 import (
@@ -49,13 +49,13 @@ func NewProxy(upstream *url.URL, routeID string, lim *Limiter, met *SSEMetrics) 
 					met.Error(tenantID, routeID, "limit_exceeded")
 				}
 				response.WriteError(w, http.StatusTooManyRequests, response.ErrorBody{
-					Type:       "error",
-					Code:       "SSE_CONCURRENCY_LIMIT_EXCEEDED",
-					Message:    "too many concurrent SSE connections for this tenant",
+					Type: "error",
+					Code: "SSE_CONCURRENCY_LIMIT_EXCEEDED",
+					Message: "too many concurrent SSE connections for this tenant",
 					RetryAfter: 60,
 					Trace: response.Trace{
 						CorrelationID: reqctx.CorrelationID(r.Context()),
-						RequestID:     reqctx.RequestID(r.Context()),
+						RequestID: reqctx.RequestID(r.Context()),
 					},
 				})
 				return

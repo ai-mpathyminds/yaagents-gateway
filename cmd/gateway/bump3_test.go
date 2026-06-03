@@ -6,10 +6,10 @@
 // Tests run in package main so they share the repoRoot helper from nfr_test.go.
 //
 // Acceptance criteria checked here:
-//  1. proxy.ProfileVersion == "v0.2" (gateway constant)
-//  2. schemas/v0.2/ contains all 6 PRD §5.2 schemas with $id updated to v0.2/ path
-//  3. spec/VERSION == "0.2"
-//  4. X-YAAgents-Profile: v0.2 appears on a proxied HTTP response (end-to-end)
+// 1. proxy.ProfileVersion == "v0.2" (gateway constant)
+// 2. schemas/v0.2/ contains all 6 PRD §5.2 schemas with $id updated to v0.2/ path
+// 3. spec/VERSION == "0.2"
+// 4. X-YAAgents-Profile: v0.2 appears on a proxied HTTP response (end-to-end)
 package main
 
 import (

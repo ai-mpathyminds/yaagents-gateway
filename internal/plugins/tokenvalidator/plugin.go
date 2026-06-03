@@ -8,7 +8,7 @@
 // Single-issuer, RS256/JWKS + HS256 test mode. Loads from jwks_url + audience
 // (singular) config keys. Returns 403 on any validation failure.
 //
-// # v2 — PLG-3b (ADR PI2-yaa-0007)
+// # v2 — PLG-3b
 //
 // Additive extension. Activated when any of the following config keys are
 // present: issuers, audiences, algorithms, clock_skew_seconds, required_claims,
@@ -16,21 +16,21 @@
 //
 // Amendments on top of v1:
 //
-//  1. Multi-issuer + per-issuer JWKS pool (issuers: list).
-//  2. Algorithm allowlist enforced before signature verification; "none" forbidden.
-//  3. Multi-audience list (token aud must match ≥1).
-//  4. Clock-skew tolerance applied to exp / nbf / iat.
-//  5. Required-claims non-empty check.
-//  6. Propagate-claims contract: all | allowlist.
-//  7. Configurable token header + scheme.
-//  8. RFC-correct status codes via on_failure map (401 default suite).
-//  9. Token-size cap checked before parse.
+// 1. Multi-issuer + per-issuer JWKS pool (issuers: list).
+// 2. Algorithm allowlist enforced before signature verification; "none" forbidden.
+// 3. Multi-audience list (token aud must match ≥1).
+// 4. Clock-skew tolerance applied to exp / nbf / iat.
+// 5. Required-claims non-empty check.
+// 6. Propagate-claims contract: all | allowlist.
+// 7. Configurable token header + scheme.
+// 8. RFC-correct status codes via on_failure map (401 default suite).
+// 9. Token-size cap checked before parse.
 //
 // Backwards compatibility: a v1 config (jwks_url + audience) loads cleanly in
 // v2 mode (backward-compat shim) with a WARN at boot. The shim preserves v1
 // status-code defaults (403) so existing deployments are not broken.
 //
-// Registration: init() → plugin.Register(&TokenValidator{}) per ADR PI2-yaa-0001 §3.
+// Registration: init() → plugin.Register(&TokenValidator{}) §3.
 package tokenvalidator
 
 import (
@@ -61,32 +61,32 @@ func init() {
 // failureCodes holds the HTTP status code returned for each failure mode.
 // All codes default to 401 in v2 mode (RFC 7235); operators may override.
 type failureCodes struct {
-	MissingToken         int
-	InvalidSignature     int
-	Expired              int
-	NotYetValid          int
-	UnknownIssuer        int
-	AudienceMismatch     int
+	MissingToken int
+	InvalidSignature int
+	Expired int
+	NotYetValid int
+	UnknownIssuer int
+	AudienceMismatch int
 	RequiredClaimMissing int
-	DisallowedAlgorithm  int
-	OversizedToken       int
-	JWKSUnavailable      int
+	DisallowedAlgorithm int
+	OversizedToken int
+	JWKSUnavailable int
 }
 
 // defaultFailureCodes returns the v2 defaults: 401 for credential failures,
 // 400 for oversized token, 503 for JWKS unreachable.
 func defaultFailureCodes() failureCodes {
 	return failureCodes{
-		MissingToken:         http.StatusUnauthorized,
-		InvalidSignature:     http.StatusUnauthorized,
-		Expired:              http.StatusUnauthorized,
-		NotYetValid:          http.StatusUnauthorized,
-		UnknownIssuer:        http.StatusUnauthorized,
-		AudienceMismatch:     http.StatusUnauthorized,
+		MissingToken: http.StatusUnauthorized,
+		InvalidSignature: http.StatusUnauthorized,
+		Expired: http.StatusUnauthorized,
+		NotYetValid: http.StatusUnauthorized,
+		UnknownIssuer: http.StatusUnauthorized,
+		AudienceMismatch: http.StatusUnauthorized,
 		RequiredClaimMissing: http.StatusUnauthorized,
-		DisallowedAlgorithm:  http.StatusUnauthorized,
-		OversizedToken:       http.StatusBadRequest,
-		JWKSUnavailable:      http.StatusServiceUnavailable,
+		DisallowedAlgorithm: http.StatusUnauthorized,
+		OversizedToken: http.StatusBadRequest,
+		JWKSUnavailable: http.StatusServiceUnavailable,
 	}
 }
 
@@ -94,16 +94,16 @@ func defaultFailureCodes() failureCodes {
 // failures). Used by the v1-shim path to preserve backwards compatibility.
 func defaultFailureCodesV1() failureCodes {
 	return failureCodes{
-		MissingToken:         http.StatusForbidden,
-		InvalidSignature:     http.StatusForbidden,
-		Expired:              http.StatusForbidden,
-		NotYetValid:          http.StatusForbidden,
-		UnknownIssuer:        http.StatusForbidden,
-		AudienceMismatch:     http.StatusForbidden,
+		MissingToken: http.StatusForbidden,
+		InvalidSignature: http.StatusForbidden,
+		Expired: http.StatusForbidden,
+		NotYetValid: http.StatusForbidden,
+		UnknownIssuer: http.StatusForbidden,
+		AudienceMismatch: http.StatusForbidden,
 		RequiredClaimMissing: http.StatusForbidden,
-		DisallowedAlgorithm:  http.StatusForbidden,
-		OversizedToken:       http.StatusBadRequest,
-		JWKSUnavailable:      http.StatusServiceUnavailable,
+		DisallowedAlgorithm: http.StatusForbidden,
+		OversizedToken: http.StatusBadRequest,
+		JWKSUnavailable: http.StatusServiceUnavailable,
 	}
 }
 
@@ -126,16 +126,16 @@ func parseFailureCodes(m map[string]any, def failureCodes) failureCodes {
 		}
 	}
 	return failureCodes{
-		MissingToken:         get("missing_token", def.MissingToken),
-		InvalidSignature:     get("invalid_signature", def.InvalidSignature),
-		Expired:              get("expired", def.Expired),
-		NotYetValid:          get("not_yet_valid", def.NotYetValid),
-		UnknownIssuer:        get("unknown_issuer", def.UnknownIssuer),
-		AudienceMismatch:     get("audience_mismatch", def.AudienceMismatch),
+		MissingToken: get("missing_token", def.MissingToken),
+		InvalidSignature: get("invalid_signature", def.InvalidSignature),
+		Expired: get("expired", def.Expired),
+		NotYetValid: get("not_yet_valid", def.NotYetValid),
+		UnknownIssuer: get("unknown_issuer", def.UnknownIssuer),
+		AudienceMismatch: get("audience_mismatch", def.AudienceMismatch),
 		RequiredClaimMissing: get("required_claim_missing", def.RequiredClaimMissing),
-		DisallowedAlgorithm:  get("disallowed_algorithm", def.DisallowedAlgorithm),
-		OversizedToken:       get("oversized_token", def.OversizedToken),
-		JWKSUnavailable:      get("jwks_unavailable", def.JWKSUnavailable),
+		DisallowedAlgorithm: get("disallowed_algorithm", def.DisallowedAlgorithm),
+		OversizedToken: get("oversized_token", def.OversizedToken),
+		JWKSUnavailable: get("jwks_unavailable", def.JWKSUnavailable),
 	}
 }
 
@@ -158,7 +158,7 @@ type TokenValidator struct {
 	// audience is the v1 single-audience string (skip validation when empty).
 	audience string
 
-	// ── v2 fields (PLG-3b / ADR PI2-yaa-0007) ──────────────────────────────
+	// ── v2 fields (v2 additions) ──────────────────────────────
 
 	// v2mode is true when any v2-specific config key is present. Controls
 	// which handler branch executes.
@@ -183,7 +183,7 @@ type TokenValidator struct {
 
 	// propagateMode controls which validated claims land in the request context.
 	// "all" (default) or "allowlist".
-	propagateMode   string
+	propagateMode string
 	propagateClaims []string // used when propagateMode == "allowlist"
 
 	// tokenHeader and tokenScheme configure token extraction (defaults:
@@ -211,7 +211,7 @@ func (tv *TokenValidator) Name() string { return "token-validator" }
 // when v2 mode is active it triggers the v1-compat shim + WARN log.
 func (tv *TokenValidator) Init(cfg plugin.PluginConfig) error {
 	if !cfg.GetBool("enabled") {
-		return fmt.Errorf("token-validator cannot be disabled (always-on per ADR PI2-yaa-0001 §5)")
+		return fmt.Errorf("token-validator cannot be disabled (always-on §5)")
 	}
 
 	raw := cfg.Raw()
@@ -301,7 +301,7 @@ func (tv *TokenValidator) initV2(cfg plugin.PluginConfig, raw map[string]any) er
 				ttlSecs = 600
 			}
 			slog.Warn("token-validator config uses v1 single-issuer form; " +
-				"please migrate to issuers: list per ADR PI2-yaa-0007")
+				"please migrate to issuers: list")
 			tv.jwksVal = newJWKSValidator(jwksURL, time.Duration(ttlSecs)*time.Second)
 			tv.issuersPool = &jwksPool{
 				entries: []issuerEntry{{issuer: "", validator: tv.jwksVal}},
@@ -320,7 +320,7 @@ func (tv *TokenValidator) initV2(cfg plugin.PluginConfig, raw map[string]any) er
 						ic.jwksURL, err)
 				}
 				pool.entries = append(pool.entries, issuerEntry{
-					issuer:    ic.issuer,
+					issuer: ic.issuer,
 					validator: newJWKSValidator(ic.jwksURL, time.Duration(ic.ttl)*time.Second),
 				})
 			}
@@ -338,7 +338,7 @@ func (tv *TokenValidator) initV2(cfg plugin.PluginConfig, raw map[string]any) er
 		}
 		for _, a := range algs {
 			if strings.EqualFold(a, "none") {
-				return fmt.Errorf("token-validator: algorithm \"none\" is forbidden (ADR PI2-yaa-0007)")
+				return fmt.Errorf("token-validator: algorithm \"none\" is forbidden ")
 			}
 		}
 		tv.algorithms = algs
@@ -395,7 +395,7 @@ func (tv *TokenValidator) initV2(cfg plugin.PluginConfig, raw map[string]any) er
 
 	// ── (7) Configurable token header ──────────────────────────────────────
 	tv.tokenHeader = "Authorization" // default
-	tv.tokenScheme = "Bearer"        // default
+	tv.tokenScheme = "Bearer" // default
 	if tokenRaw, ok := raw["token"].(map[string]any); ok {
 		if h, ok := tokenRaw["header"].(string); ok && h != "" {
 			tv.tokenHeader = h
@@ -430,9 +430,9 @@ func (tv *TokenValidator) initV2(cfg plugin.PluginConfig, raw map[string]any) er
 
 // issuerCfg is an intermediate struct used only during Init parsing.
 type issuerCfg struct {
-	issuer  string
+	issuer string
 	jwksURL string
-	ttl     int
+	ttl int
 }
 
 // parseIssuers reads the "issuers" key from the raw config map.
@@ -580,7 +580,7 @@ func (tv *TokenValidator) handleV2(next http.Handler, w http.ResponseWriter, r *
 	}
 
 	var (
-		mc  jwt.MapClaims
+		mc jwt.MapClaims
 		err error
 	)
 
@@ -703,12 +703,12 @@ func writeForbidden(w http.ResponseWriter, r *http.Request, code, msg string) {
 		reqID = r.Header.Get("X-Request-ID")
 	}
 	response.WriteError(w, http.StatusForbidden, response.ErrorBody{
-		Type:    "forbidden",
-		Code:    code,
+		Type: "forbidden",
+		Code: code,
 		Message: msg,
 		Trace: response.Trace{
 			CorrelationID: corrID,
-			RequestID:     reqID,
+			RequestID: reqID,
 		},
 	})
 }
@@ -751,12 +751,12 @@ func (tv *TokenValidator) writeV2Error(w http.ResponseWriter, r *http.Request, s
 		reqID = r.Header.Get("X-Request-ID")
 	}
 	response.WriteError(w, status, response.ErrorBody{
-		Type:    "error",
-		Code:    code,
+		Type: "error",
+		Code: code,
 		Message: msg,
 		Trace: response.Trace{
 			CorrelationID: corrID,
-			RequestID:     reqID,
+			RequestID: reqID,
 		},
 	})
 }

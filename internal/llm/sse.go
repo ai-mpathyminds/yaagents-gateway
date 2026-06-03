@@ -76,12 +76,12 @@ func NewSSEProxy(upstream *url.URL, routeID string, met *SSEMetrics) http.Handle
 					met.Error(tenantID, routeID, "timeout")
 				}
 				response.WriteError(w, http.StatusInternalServerError, response.ErrorBody{
-					Type:    "error",
-					Code:    "EXECUTION_TIMEOUT",
+					Type: "error",
+					Code: "EXECUTION_TIMEOUT",
 					Message: "execution timeout exceeded",
 					Trace: response.Trace{
 						CorrelationID: reqctx.CorrelationID(r.Context()),
-						RequestID:     reqctx.RequestID(r.Context()),
+						RequestID: reqctx.RequestID(r.Context()),
 					},
 				})
 			case context.Canceled:

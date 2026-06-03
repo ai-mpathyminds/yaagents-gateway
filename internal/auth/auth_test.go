@@ -403,7 +403,7 @@ func TestNewValidator_BothSet_JWKSPrecedence(t *testing.T) {
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 func futureExp() time.Time { return time.Now().Add(time.Hour) }
-func pastExp() time.Time   { return time.Now().Add(-time.Hour) }
+func pastExp() time.Time { return time.Now().Add(-time.Hour) }
 
 func makeHS256Token(t *testing.T, secret, sub string, exp time.Time, roles []string) string {
 	t.Helper()
