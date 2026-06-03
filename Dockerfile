@@ -8,7 +8,7 @@
 # GATEWAY_JWT_JWKS_URL, or any other credential. All secrets are runtime-only
 # environment variables injected by the container orchestrator.
 
-FROM golang:1.23-alpine3.20 AS builder
+FROM golang:1.25-alpine AS builder
 WORKDIR /build
 
 # Cache deps separately from source
