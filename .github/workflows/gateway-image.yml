@@ -111,7 +111,7 @@ jobs:
       # exit-code: 1 — CI fails on any unpatched HIGH or CRITICAL finding.
       # ignore-unfixed: true — advisory-only; non-actionable vulns don't block.
       - name: trivy-scan
-        uses: aquasecurity/trivy-action@0.36.0
+        uses: aquasecurity/trivy-action@v0.36.0
         with:
           image-ref: ${{ env.IMAGE }}@${{ steps.push.outputs.digest }}
           format: sarif
