@@ -13,6 +13,7 @@ import (
 	"math/big"
 	"net/http"
 	"net/http/httptest"
+	"strings"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -261,7 +262,7 @@ func TestHandler_HS256_ClaimsPropagated(t *testing.T) {
 	}
 }
 
-// ── Handler — validation failures: 403, next NOT called ──────────────────────
+// ── Handler — validation failures ────────────────────────────────────────────
 
 func assertForbidden(t *testing.T, rr *httptest.ResponseRecorder, nextCalled bool) {
 	t.Helper()
@@ -277,7 +278,10 @@ func assertForbidden(t *testing.T, rr *httptest.ResponseRecorder, nextCalled boo
 	}
 }
 
-func TestHandler_MissingToken_Returns403(t *testing.T) {
+// TestHandler_MissingToken_Returns401 asserts that v1-mode (HS256 test_mode)
+// returns 401 Unauthorized + WWW-Authenticate header when no Authorization
+// header is supplied (RFC 7235 §3.1 + §4.1; WI-3yaa.SMOKE-GATEWAY-401).
+func TestHandler_MissingToken_Returns401(t *testing.T) {
 	tv := newHS256Plugin(t, "s")
 
 	var nextCalled bool
@@ -287,7 +291,30 @@ func TestHandler_MissingToken_Returns403(t *testing.T) {
 	rr := httptest.NewRecorder()
 	tv.Handler(upstream).ServeHTTP(rr, req)
 
-	assertForbidden(t, rr, nextCalled)
+	if rr.Code != http.StatusUnauthorized {
+		t.Errorf("status: got %d, want 401", rr.Code)
+	}
+	if nextCalled {
+		t.Error("next must NOT be called when token is missing")
+	}
+	ct := rr.Header().Get("Content-Type")
+	if ct != response.ContentTypeError {
+		t.Errorf("Content-Type: got %q, want %q", ct, response.ContentTypeError)
+	}
+	wwwAuth := rr.Header().Get("WWW-Authenticate")
+	if wwwAuth == "" {
+		t.Error("WWW-Authenticate header must be present on 401 (RFC 7235 §4.1)")
+	}
+	if !strings.HasPrefix(wwwAuth, "Bearer realm=") {
+		t.Errorf("WWW-Authenticate: got %q, want Bearer realm=... prefix", wwwAuth)
+	}
+	var body response.ErrorBody
+	if err := json.NewDecoder(rr.Body).Decode(&body); err != nil {
+		t.Fatalf("decode body: %v", err)
+	}
+	if body.Code != "MISSING_TOKEN" {
+		t.Errorf("body.code: got %q, want MISSING_TOKEN", body.Code)
+	}
 }
 
 func TestHandler_HS256_TamperedToken_Returns403(t *testing.T) {
@@ -325,24 +352,26 @@ func TestHandler_HS256_ExpiredToken_Returns403(t *testing.T) {
 	assertForbidden(t, rr, nextCalled)
 }
 
-// ── 403 trace.correlationId populated ────────────────────────────────────────
+// ── 401/403 trace.correlationId populated ────────────────────────────────────
 
-func TestHandler_403_TraceCorrelationID(t *testing.T) {
+// TestHandler_401_TraceCorrelationID verifies that trace.correlationId is
+// propagated from reqctx into the 401 MISSING_TOKEN body (RFC 7235 fix).
+func TestHandler_401_TraceCorrelationID(t *testing.T) {
 	const secret = "testsecret"
 	tv := newHS256Plugin(t, secret)
 
 	upstream := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {})
 
 	req := httptest.NewRequest(http.MethodGet, "/", nil)
-	// No Authorization header → 403.
+	// No Authorization header → 401 (RFC 7235 §3.1).
 	// Set correlation ID via reqctx on the incoming request context.
 	ctx := reqctx.WithCorrelationID(req.Context(), "corr-abc-123")
 	req = req.WithContext(ctx)
 	rr := httptest.NewRecorder()
 	tv.Handler(upstream).ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusForbidden {
-		t.Fatalf("status: got %d, want 403", rr.Code)
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("status: got %d, want 401", rr.Code)
 	}
 	var body response.ErrorBody
 	if err := json.NewDecoder(rr.Body).Decode(&body); err != nil {
@@ -354,7 +383,9 @@ func TestHandler_403_TraceCorrelationID(t *testing.T) {
 	}
 }
 
-func TestHandler_403_TraceCorrelationID_FallbackHeader(t *testing.T) {
+// TestHandler_401_TraceCorrelationID_FallbackHeader verifies that when no
+// reqctx correlation ID is set, the X-Correlation-ID request header is used.
+func TestHandler_401_TraceCorrelationID_FallbackHeader(t *testing.T) {
 	tv := newHS256Plugin(t, "s")
 	upstream := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {})
 
@@ -364,6 +395,9 @@ func TestHandler_403_TraceCorrelationID_FallbackHeader(t *testing.T) {
 	rr := httptest.NewRecorder()
 	tv.Handler(upstream).ServeHTTP(rr, req)
 
+	if rr.Code != http.StatusUnauthorized {
+		t.Fatalf("status: got %d, want 401", rr.Code)
+	}
 	var body response.ErrorBody
 	if err := json.NewDecoder(rr.Body).Decode(&body); err != nil {
 		t.Fatalf("decode body: %v", err)

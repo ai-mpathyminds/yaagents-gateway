@@ -6,7 +6,9 @@
 // # v1 — PLG-3 (commit 442cece)
 //
 // Single-issuer, RS256/JWKS + HS256 test mode. Loads from jwks_url + audience
-// (singular) config keys. Returns 403 on any validation failure.
+// (singular) config keys. Returns 401 + WWW-Authenticate for MISSING_TOKEN (RFC
+// 7235 §3.1); 403 for invalid/expired token (backward-compat; operators may
+// migrate to v2 on_failure map).
 //
 // # v2 — PLG-3b
 //
@@ -510,11 +512,12 @@ func (tv *TokenValidator) Handler(next http.Handler) http.Handler {
 	})
 }
 
-// handleV1 is the original v1 handler — unchanged from PLG-3.
+// handleV1 is the v1 handler. Missing Authorization header → 401 (RFC 7235 §3.1)
+// with WWW-Authenticate per §4.1. Invalid/expired token → 403 (v1 backward compat).
 func (tv *TokenValidator) handleV1(next http.Handler, w http.ResponseWriter, r *http.Request) {
 	tokenStr, ok := extractBearer(r)
 	if !ok {
-		writeForbidden(w, r, "MISSING_TOKEN", "Authorization header with Bearer token is required")
+		writeMissingToken(w, r)
 		return
 	}
 
@@ -692,7 +695,8 @@ func validateHS256(tokenStr string, key []byte, audience string) (jwt.MapClaims,
 	return mc, nil
 }
 
-// writeForbidden writes a 403 vendor-error body (v1 — unchanged).
+// writeForbidden writes a 403 vendor-error body (v1 — unchanged; used for
+// invalid/expired token paths to preserve backward-compat status code).
 func writeForbidden(w http.ResponseWriter, r *http.Request, code, msg string) {
 	corrID := reqctx.CorrelationID(r.Context())
 	if corrID == "" {
@@ -709,6 +713,31 @@ func writeForbidden(w http.ResponseWriter, r *http.Request, code, msg string) {
 		Trace: response.Trace{
 			CorrelationID: corrID,
 			RequestID: reqID,
+		},
+	})
+}
+
+// writeMissingToken writes 401 Unauthorized for a missing Authorization header
+// (RFC 7235 §3.1). Sets WWW-Authenticate per RFC 7235 §4.1 before WriteHeader
+// so the header lands in the response.
+func writeMissingToken(w http.ResponseWriter, r *http.Request) {
+	corrID := reqctx.CorrelationID(r.Context())
+	if corrID == "" {
+		corrID = r.Header.Get("X-Correlation-ID")
+	}
+	reqID := reqctx.RequestID(r.Context())
+	if reqID == "" {
+		reqID = r.Header.Get("X-Request-ID")
+	}
+	// WWW-Authenticate MUST be set before response.WriteError calls WriteHeader.
+	w.Header().Set("WWW-Authenticate", `Bearer realm="yaagents-gateway"`)
+	response.WriteError(w, http.StatusUnauthorized, response.ErrorBody{
+		Type:    "unauthorized",
+		Code:    "MISSING_TOKEN",
+		Message: "Authorization header with Bearer token is required",
+		Trace: response.Trace{
+			CorrelationID: corrID,
+			RequestID:     reqID,
 		},
 	})
 }
