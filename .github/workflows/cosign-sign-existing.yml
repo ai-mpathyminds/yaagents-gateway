@@ -1,0 +1,102 @@
+# .github/workflows/cosign-sign-existing.yml
+# WI-3yaa.SMOKE-COSIGN-RESIGN — sign an existing GHCR image digest without rebuilding.
+#
+# Triggered manually via workflow_dispatch with two inputs:
+#   tag    — the image tag to sign (e.g. 0.3.0)
+#   digest — the exact digest to sign (e.g. sha256:d3b963f...)
+#
+# Rationale: gateway-image.yml cosign step only signs the newly-built image;
+# it cannot sign a pre-existing digest pushed by a prior workflow_dispatch run
+# against the v0.3.0 tag (pre-cosign commit 6395c461). This standalone workflow
+# signs the existing manifest without rebuilding, preserving §20(b) tag immutability.
+#
+# Permissions:
+#   id-token: write — required for cosign keyless OIDC signing
+#   packages: write — required to attach the signature to the GHCR package
+#
+# Apache 2.0 (portfolio)
+
+name: cosign-sign-existing-digest
+
+on:
+  workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Image tag to sign (without v prefix, e.g. 0.3.0)'
+        required: true
+        type: string
+      digest:
+        description: 'Image digest to sign (sha256:...)'
+        required: true
+        type: string
+
+permissions:
+  id-token: write   # cosign keyless OIDC
+  packages: write   # attach signature to GHCR package
+
+env:
+  IMAGE: ghcr.io/ai-mpathyminds/yaagents-gateway
+
+jobs:
+  sign-existing:
+    name: Cosign sign existing digest
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate inputs
+        run: |
+          TAG="${{ inputs.tag }}"
+          DIGEST="${{ inputs.digest }}"
+          if [[ -z "$TAG" ]]; then
+            echo "::error::tag input is required"
+            exit 1
+          fi
+          if [[ ! "$DIGEST" =~ ^sha256:[a-f0-9]{64}$ ]]; then
+            echo "::error::digest must be sha256:<64 hex chars>; got: ${DIGEST}"
+            exit 1
+          fi
+          echo "Inputs validated — tag=${TAG} digest=${DIGEST}"
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Install Cosign
+        uses: sigstore/cosign-installer@v3.7.0
+        with:
+          cosign-release: 'v2.4.1'
+
+      - name: Cosign keyless-sign existing digest
+        env:
+          COSIGN_EXPERIMENTAL: '1'
+        run: |
+          DIGEST="${{ inputs.digest }}"
+          IMAGE_REF="${{ env.IMAGE }}@${DIGEST}"
+          echo "Signing: ${IMAGE_REF}"
+          cosign sign --yes "${IMAGE_REF}"
+          echo "cosign-sign: PASS digest=${DIGEST}"
+
+      - name: Cosign verify (external sanity check)
+        run: |
+          DIGEST="${{ inputs.digest }}"
+          IMAGE_REF="${{ env.IMAGE }}@${DIGEST}"
+          echo "Verifying: ${IMAGE_REF}"
+          cosign verify \
+            --certificate-identity-regexp '.+' \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            "${IMAGE_REF}"
+          echo "cosign-verify: PASS"
+
+      - name: Cosign verify by tag (alias check)
+        run: |
+          TAG="${{ inputs.tag }}"
+          IMAGE_TAG="${{ env.IMAGE }}:${TAG}"
+          echo "Verifying by tag: ${IMAGE_TAG}"
+          cosign verify \
+            --certificate-identity-regexp '.+' \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            "${IMAGE_TAG}" || true
+          # non-fatal: tag → digest resolution sometimes lags; digest-form verify above is authoritative
