@@ -48,6 +48,8 @@ services:
     depends_on:
       noop-upstream:
         condition: service_healthy
+      mock-otlp-collector:
+        condition: service_healthy
     restart: "no"
 
   noop-upstream:
@@ -60,6 +62,35 @@ services:
       PORT: "8121"
     healthcheck:
       test: ["CMD", "wget", "-qO-", "http://localhost:8121/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 32m
+          cpus: "0.25"
+    networks:
+      - bench-net
+    restart: "no"
+
+  # mock-otlp-collector: minimal gRPC OTLP trace receiver for otelaudit OTLP-mode bench
+  # (WI-4yaa.BENCH-5).  For non-otelaudit benches this service starts idle.
+  # Included in gateway's depends_on so the OTLP endpoint is reachable before
+  # the gateway Init() calls otlptracegrpc.New().
+  mock-otlp-collector:
+    build:
+      context: ..
+      dockerfile: bench/Dockerfile.mockotelcollector
+    expose:
+      - "4317"
+      - "4318"
+    environment:
+      GRPC_PORT: "4317"
+      HTTP_PORT: "4318"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:4318/healthz"]
       interval: 5s
       timeout: 3s
       retries: 3

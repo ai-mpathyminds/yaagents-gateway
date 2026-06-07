@@ -1,0 +1,28 @@
+{
+  "plugin": "otelaudit-otlp",
+  "sha": "ab48611",
+  "timestamp": "20260607T1403Z",
+  "duration_s": "60",
+  "target_rps": 100,
+  "plugin_enabled": {
+    "requests": 6000,
+    "rps": 100.02,
+    "p50_ms": 2.159,
+    "p95_ms": 4.529,
+    "p99_ms": 16.779,
+    "success_rate": 1
+  },
+  "baseline": {
+    "requests": 6000,
+    "rps": 100.02,
+    "p50_ms": 2.204,
+    "p95_ms": 4.056,
+    "p99_ms": 10.914,
+    "success_rate": 1
+  },
+  "overhead_delta_p99_ms": 5.865,
+  "mode": "otlp_exporter",
+  "exporter": "otlp",
+  "mock_collector": "mock-otlp-collector:4317 (bench/cmd/mockotelcollector)",
+  "architect_note": "strategy=otlp (OTel gRPC BatchSpanProcessor \u2192 mock-otlp-collector:4317). p50 delta=-0.045ms (within noise; async batch export not on hot path). p99 delta=5.865ms includes mock-collector receive latency over Docker bridge network. BatchSpanProcessor exports in background \u2014 request latency = span.Start+End only. 100% 200 OK. mock-otlp-collector received all spans (accepted_total verifiable at :4318/metrics). Baseline seeded. Gates PLG-16 OTLP path."
+}

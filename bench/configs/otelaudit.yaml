@@ -1,0 +1,14 @@
+# gateway/bench/configs/otelaudit.yaml
+# otel-audit plugin bench — stdout exporter mode (WI-4yaa.BENCH-5).
+#
+# stdout exporter emits slog INFO records per request (no OTel SDK transport).
+# Overhead = slog.InfoContext call + context-value reads per request.
+plugins:
+  - name: token-validator
+    enabled: true
+    test_mode: true
+    jwt_secret: bench-secret
+    audience: bench-gateway
+  - name: otel-audit
+    enabled: true
+    exporter: stdout

@@ -1,0 +1,18 @@
+# gateway/bench/configs/otelaudit-otlp.yaml
+# otel-audit plugin bench — OTLP gRPC exporter mode (WI-4yaa.BENCH-5).
+#
+# OTLP exporter creates an OTel span per request; the SDK BatchSpanProcessor
+# exports asynchronously to mock-otlp-collector:4317.
+# Overhead = OTel span creation + async batch export (background goroutine;
+# not on the hot path).  mock-otlp-collector must be healthy before gateway
+# starts (enforced via compose depends_on).
+plugins:
+  - name: token-validator
+    enabled: true
+    test_mode: true
+    jwt_secret: bench-secret
+    audience: bench-gateway
+  - name: otel-audit
+    enabled: true
+    exporter: otlp
+    otlp_endpoint: http://mock-otlp-collector:4317

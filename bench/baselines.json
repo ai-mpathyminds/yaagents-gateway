@@ -38,5 +38,15 @@
     "overhead_delta_p99_ms": 0.749,
     "sha": "21ab2fc",
     "timestamp": "20260607T1308Z"
+  },
+  "otelaudit": {
+    "overhead_delta_p99_ms": 36.775,
+    "sha": "ab48611",
+    "timestamp": "20260607T1358Z"
+  },
+  "otelaudit-otlp": {
+    "overhead_delta_p99_ms": 5.865,
+    "sha": "ab48611",
+    "timestamp": "20260607T1403Z"
   }
 }

@@ -1,0 +1,6 @@
+# vegeta target file — otelaudit bench, OTLP gRPC exporter (WI-4yaa.BENCH-5)
+# Token placeholder {{TOKEN}} is replaced by harness.sh with a live HS256 JWT.
+# GET /bench is the synthetic endpoint wired to noop-upstream in bench-routes.yaml.
+GET http://localhost:8120/bench
+Authorization: {{TOKEN}}
+Content-Type: application/json

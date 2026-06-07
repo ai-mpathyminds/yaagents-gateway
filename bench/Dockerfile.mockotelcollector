@@ -1,0 +1,29 @@
+# gateway/bench/Dockerfile.mockotelcollector — mock OTLP gRPC collector stub
+# for the otelaudit plugin bench harness.
+# Build context: gateway/ directory (holds go.mod for the module).
+# Reference: WI-4yaa.BENCH-5
+#
+# Ports:
+#   4317 — gRPC OTLP trace receiver (standard OTLP gRPC port)
+#   4318 — HTTP /healthz + /metrics (standard OTLP HTTP port; used for health)
+
+FROM golang:1.25-alpine AS builder
+WORKDIR /build
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build \
+    -ldflags="-s -w" \
+    -o /mockotelcollector \
+    ./bench/cmd/mockotelcollector
+
+FROM alpine:3.20
+RUN addgroup -S bench && adduser -S otelcol -G bench
+WORKDIR /app
+COPY --from=builder /mockotelcollector /app/mockotelcollector
+USER otelcol
+EXPOSE 4317
+EXPOSE 4318
+HEALTHCHECK --interval=5s --timeout=3s --retries=3 \
+    CMD wget -qO- http://localhost:4318/healthz || exit 1
+CMD ["/app/mockotelcollector"]

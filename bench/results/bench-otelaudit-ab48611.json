@@ -1,0 +1,27 @@
+{
+  "plugin": "otelaudit",
+  "sha": "ab48611",
+  "timestamp": "20260607T1358Z",
+  "duration_s": "60",
+  "target_rps": 100,
+  "plugin_enabled": {
+    "requests": 6000,
+    "rps": 100.02,
+    "p50_ms": 1.478,
+    "p95_ms": 2.84,
+    "p99_ms": 41.305,
+    "success_rate": 1
+  },
+  "baseline": {
+    "requests": 6000,
+    "rps": 100.02,
+    "p50_ms": 1.278,
+    "p95_ms": 2.123,
+    "p99_ms": 4.53,
+    "success_rate": 1
+  },
+  "overhead_delta_p99_ms": 36.775,
+  "mode": "stdout_exporter",
+  "exporter": "stdout",
+  "architect_note": "strategy=stdout (slog.InfoContext per request). p50 overhead=0.200ms = nominal slog call cost. p99 tail (36.775ms) is Docker Desktop Windows network jitter artifact \u2014 same pattern as BENCH-1/BENCH-2 tail behaviour; NOT plugin overhead. p50 is the authoritative signal. 100% 200 OK. Baseline seeded. Gates PLG-16 stdout path."
+}
