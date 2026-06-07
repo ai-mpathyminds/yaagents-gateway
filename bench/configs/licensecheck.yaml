@@ -1,0 +1,23 @@
+# gateway/bench/configs/licensecheck.yaml
+# Plugin config for BENCH-3 "webhook-mode" variant: token-validator (HS256) +
+# license-check with near-zero cache TTL so every request calls the mock
+# license-server. This characterises external-backend latency amplification —
+# analogous to the PRD §6.2.3 "webhook mode" hypothesis. The as-shipped plugin
+# is single-backend (license-server URL verification per PLG-08 discovery).
+# mock-webhook service (port 8122) acts as the license-server; returns HTTP 200
+# for any GET, which the plugin interprets as "token valid".
+# Reference: WI-4yaa.BENCH-3
+plugins:
+  - name: token-validator
+    enabled: true
+    test_mode: true
+    jwt_secret: bench-secret
+    audience: bench-gateway
+
+  - name: license-check
+    enabled: true
+    license_url: http://mock-webhook:8122/validate
+    header: X-License-Token
+    cache_ttl_seconds: 1
+    max_cache_size: 1024
+    timeout_seconds: 5

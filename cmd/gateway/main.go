@@ -39,6 +39,9 @@ import (
 
 	// Plugin side-effect registrations .
 	_ "github.com/ai-mpathyminds/yaagents-gateway/internal/plugins/cors"
+	_ "github.com/ai-mpathyminds/yaagents-gateway/internal/plugins/licensecheck"
+	_ "github.com/ai-mpathyminds/yaagents-gateway/internal/plugins/otelaudit"
+	_ "github.com/ai-mpathyminds/yaagents-gateway/internal/plugins/promptsanitize"
 	_ "github.com/ai-mpathyminds/yaagents-gateway/internal/plugins/tenantinjector"
 	_ "github.com/ai-mpathyminds/yaagents-gateway/internal/plugins/tokenvalidator"
 )

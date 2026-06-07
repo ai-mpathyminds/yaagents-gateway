@@ -1,0 +1,9 @@
+# Go build artifacts
+*.exe
+coverage.out
+cov.out
+cov-*.out
+covgw.out
+
+# Bench runtime-generated files (written by harness.sh; not source-controlled)
+bench/active-plugins.yaml

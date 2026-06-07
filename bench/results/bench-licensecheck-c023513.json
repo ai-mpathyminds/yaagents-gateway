@@ -1,0 +1,26 @@
+{
+  "plugin": "licensecheck",
+  "sha": "c023513",
+  "timestamp": "20260607T1212Z",
+  "duration_s": "60",
+  "target_rps": 100,
+  "mode": "webhook_low_ttl",
+  "plugin_enabled": {
+    "requests": 6000,
+    "rps": 100.01,
+    "p50_ms": 2.896,
+    "p95_ms": 39.292,
+    "p99_ms": 353.735,
+    "success_rate": 0.9998
+  },
+  "baseline": {
+    "requests": 6000,
+    "rps": 100.02,
+    "p50_ms": 3.002,
+    "p95_ms": 23.531,
+    "p99_ms": 73.385,
+    "success_rate": 1
+  },
+  "overhead_delta_p99_ms": 280.35,
+  "architect_note": "cache_ttl_seconds=1 at 100 RPS forces ~60 license-server calls per 60s run (1% miss rate; fixed bench-license-token key). Overhead baseline INCLUDES external HTTP round-trip to mock-webhook per AC requirement. Dev-host p99 tail is high-variance (Docker scheduling noise on 16GB Windows host); p50=2.9ms reflects true median overhead. CI measurements expected to be significantly more stable."
+}

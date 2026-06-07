@@ -1,0 +1,4 @@
+GET http://localhost:8120/bench
+Authorization: {{TOKEN}}
+X-License-Token: bench-license-token
+Content-Type: application/json

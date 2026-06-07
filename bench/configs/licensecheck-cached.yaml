@@ -1,0 +1,21 @@
+# gateway/bench/configs/licensecheck-cached.yaml
+# Plugin config for BENCH-3 "header-mode" (cached path) variant: same single-
+# backend as licensecheck.yaml but with high cache TTL so the first request
+# populates the cache and all subsequent requests are cache hits (no I/O).
+# This characterises the near-zero overhead of the cached/header-equivalent path
+# — analogous to the PRD §6.2.3 "header mode" hypothesis.
+# Reference: WI-4yaa.BENCH-3
+plugins:
+  - name: token-validator
+    enabled: true
+    test_mode: true
+    jwt_secret: bench-secret
+    audience: bench-gateway
+
+  - name: license-check
+    enabled: true
+    license_url: http://mock-webhook:8122/validate
+    header: X-License-Token
+    cache_ttl_seconds: 300
+    max_cache_size: 1024
+    timeout_seconds: 5

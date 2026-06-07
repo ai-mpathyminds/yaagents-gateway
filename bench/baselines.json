@@ -8,5 +8,15 @@
     "overhead_delta_p99_ms": 10.3,
     "sha": "7d0dea0",
     "timestamp": "20260607T1148Z"
+  },
+  "licensecheck": {
+    "overhead_delta_p99_ms": 280.35,
+    "sha": "c023513",
+    "timestamp": "20260607T1212Z"
+  },
+  "licensecheck-cached": {
+    "overhead_delta_p99_ms": -1.119,
+    "sha": "c023513",
+    "timestamp": "20260607T1222Z"
   }
 }

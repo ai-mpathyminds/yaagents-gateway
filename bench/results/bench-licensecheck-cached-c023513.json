@@ -1,0 +1,26 @@
+{
+  "plugin": "licensecheck-cached",
+  "sha": "c023513",
+  "timestamp": "20260607T1222Z",
+  "duration_s": "60",
+  "target_rps": 100,
+  "mode": "cached_high_ttl",
+  "plugin_enabled": {
+    "requests": 6000,
+    "rps": 100.02,
+    "p50_ms": 3.278,
+    "p95_ms": 34.968,
+    "p99_ms": 80.878,
+    "success_rate": 1
+  },
+  "baseline": {
+    "requests": 6000,
+    "rps": 100.02,
+    "p50_ms": 3.002,
+    "p95_ms": 31.691,
+    "p99_ms": 81.997,
+    "success_rate": 1
+  },
+  "overhead_delta_p99_ms": -1.119,
+  "architect_note": "cache_ttl_seconds=300 at 100 RPS — 1 cache miss on request 1, all 5999 subsequent requests are cache hits (in-memory LRU lookup only; no I/O). overhead_delta=-1.119ms is within measurement noise, confirming near-zero overhead on the cached path."
+}
