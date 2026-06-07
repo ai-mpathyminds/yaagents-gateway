@@ -170,6 +170,10 @@ type TokenValidator struct {
 	// Nil when v2mode is false.
 	issuersPool *jwksPool
 
+	// issuerRegistry is the ADR PI4-yaa-0002 plug-point for per-issuer config
+	// lookup (ClaimMappings). Nil in v1 mode and test_mode.
+	issuerRegistry IssuerRegistry
+
 	// algorithms is the allowlist checked before signature verification.
 	// Set to ["HS256"] in test_mode; ["RS256","ES256"] by default otherwise.
 	algorithms []string
@@ -313,6 +317,7 @@ func (tv *TokenValidator) initV2(cfg plugin.PluginConfig, raw map[string]any) er
 			failDefaults = defaultFailureCodesV1()
 		} else {
 			pool := &jwksPool{entries: make([]issuerEntry, 0, len(issuers))}
+			regMap := make(map[string]IssuerConfig, len(issuers))
 			for _, ic := range issuers {
 				if ic.issuer == "" {
 					return fmt.Errorf("token-validator: issuers[].issuer must be non-empty in v2 mode")
@@ -322,11 +327,13 @@ func (tv *TokenValidator) initV2(cfg plugin.PluginConfig, raw map[string]any) er
 						ic.jwksURL, err)
 				}
 				pool.entries = append(pool.entries, issuerEntry{
-					issuer: ic.issuer,
+					issuer:    ic.issuer,
 					validator: newJWKSValidator(ic.jwksURL, time.Duration(ic.ttl)*time.Second),
 				})
+				regMap[ic.issuer] = IssuerConfig{ClaimMappings: ic.claimMappings}
 			}
 			tv.issuersPool = pool
+			tv.issuerRegistry = &staticIssuerRegistry{m: regMap}
 		}
 	}
 
@@ -432,9 +439,10 @@ func (tv *TokenValidator) initV2(cfg plugin.PluginConfig, raw map[string]any) er
 
 // issuerCfg is an intermediate struct used only during Init parsing.
 type issuerCfg struct {
-	issuer string
-	jwksURL string
-	ttl int
+	issuer        string
+	jwksURL       string
+	ttl           int
+	claimMappings ClaimMappings // optional; from claim_mappings sub-map
 }
 
 // parseIssuers reads the "issuers" key from the raw config map.
@@ -470,9 +478,32 @@ func parseIssuers(raw map[string]any) ([]issuerCfg, error) {
 				ttl = int(n)
 			}
 		}
-		out = append(out, issuerCfg{issuer: iss, jwksURL: jwksURL, ttl: ttl})
+			out = append(out, issuerCfg{
+			issuer:        iss,
+			jwksURL:       jwksURL,
+			ttl:           ttl,
+			claimMappings: parseClaimMappings(m),
+		})
 	}
 	return out, nil
+}
+
+// parseClaimMappings reads the optional "claim_mappings" sub-map from an issuer
+// entry and returns the populated ClaimMappings. Returns zero value when absent.
+func parseClaimMappings(m map[string]any) ClaimMappings {
+	raw, ok := m["claim_mappings"].(map[string]any)
+	if !ok {
+		return ClaimMappings{}
+	}
+	get := func(key string) string {
+		s, _ := raw[key].(string)
+		return s
+	}
+	return ClaimMappings{
+		Subject: get("subject"),
+		Roles:   get("roles"),
+		Tenant:  get("tenant"),
+	}
 }
 
 // stringSliceFromAny converts a raw any value ([]any or []string) to []string.
@@ -651,7 +682,20 @@ func (tv *TokenValidator) handleV2(next http.Handler, w http.ResponseWriter, r *
 		ctx = reqctx.WithTenantID(ctx, tid)
 	}
 
-	next.ServeHTTP(w, r.WithContext(ctx))
+	// (PLG-02) Inject per-issuer claim-mapped request headers when configured.
+	// Only fires when the issuer entry carries a non-zero ClaimMappings; configs
+	// that omit claim_mappings continue to work unchanged (backward compat).
+	// In test/HS256 mode issuerRegistry is never consulted (no issuer routing).
+	rOut := r.WithContext(ctx)
+	if !tv.testMode && tv.issuerRegistry != nil {
+		// Re-read iss from validated claims — the mc map is authoritative here.
+		claimIss := claimStr(mc, "iss")
+		if icfg, ok := tv.issuerRegistry.Lookup(claimIss); ok && icfg.ClaimMappings.isConfigured() {
+			rOut = injectClaimHeaders(rOut, mc, icfg.ClaimMappings)
+		}
+	}
+
+	next.ServeHTTP(w, rOut)
 }
 
 // Shutdown is a no-op; the plugin holds no persistent background resources.

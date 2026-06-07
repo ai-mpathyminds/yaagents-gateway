@@ -1329,3 +1329,286 @@ func TestInit_V2_MaxTokenBytesOutOfBounds_Error(t *testing.T) {
 		t.Fatal("expected error for max_token_bytes > 65536")
 	}
 }
+
+// ── PLG-02: claim_mappings per-issuer header injection ───────────────────────
+
+// TestHandler_V2_ClaimMappings_HeadersInjected verifies that when an issuer is
+// configured with claim_mappings, the gateway injects X-Actor-Principal,
+// X-Actor-Roles and X-Tenant-ID into the upstream request.
+func TestHandler_V2_ClaimMappings_HeadersInjected(t *testing.T) {
+	const (
+		iss = "https://keycloak.example.com/realms/myrealm"
+		kid = "k1"
+	)
+	priv := testRSAKey(t)
+	srvURL, _ := jwksServer(t, map[string]*rsa.PublicKey{kid: &priv.PublicKey})
+
+	tv := &TokenValidator{}
+	if err := tv.Init(plugin.NewMapConfig(map[string]any{
+		"enabled":    true,
+		"algorithms": []string{"RS256"},
+		"issuers": makeIssuers(map[string]any{
+			"issuer":   iss,
+			"jwks_url": srvURL,
+			"claim_mappings": map[string]any{
+				"subject": "preferred_username",
+				"roles":   "realm_access.roles",
+				"tenant":  "org_id",
+			},
+		}),
+		"propagate_claims": map[string]any{"mode": "all"},
+	})); err != nil {
+		t.Fatalf("Init: %v", err)
+	}
+
+	claims := jwt.MapClaims{
+		"sub":                "u-001",
+		"preferred_username": "alice",
+		"realm_access": map[string]any{
+			"roles": []any{"admin", "user"},
+		},
+		"org_id": "org-42",
+		"exp":    time.Now().Add(time.Hour).Unix(),
+		"iss":    iss,
+	}
+	tok := signRS256(t, priv, kid, claims)
+
+	var (
+		gotPrincipal string
+		gotRoles     string
+		gotTenant    string
+	)
+	upstream := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		gotPrincipal = r.Header.Get("X-Actor-Principal")
+		gotRoles = r.Header.Get("X-Actor-Roles")
+		gotTenant = r.Header.Get("X-Tenant-ID")
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/api/v1/resource", nil)
+	req.Header.Set("Authorization", "Bearer "+tok)
+	rr := httptest.NewRecorder()
+	tv.Handler(upstream).ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d: %s", rr.Code, rr.Body.String())
+	}
+	if gotPrincipal != "alice" {
+		t.Errorf("X-Actor-Principal: want %q, got %q", "alice", gotPrincipal)
+	}
+	// Roles may arrive in any order; just verify both roles present.
+	if !strings.Contains(gotRoles, "admin") || !strings.Contains(gotRoles, "user") {
+		t.Errorf("X-Actor-Roles: want admin and user, got %q", gotRoles)
+	}
+	if gotTenant != "org-42" {
+		t.Errorf("X-Tenant-ID: want %q, got %q", "org-42", gotTenant)
+	}
+}
+
+// TestHandler_V2_ClaimMappings_NoMapping_NoHeaders verifies backward compat:
+// an issuer WITHOUT claim_mappings does not inject any extra headers.
+func TestHandler_V2_ClaimMappings_NoMapping_NoHeaders(t *testing.T) {
+	const (
+		iss = "https://idp.example.com"
+		kid = "k2"
+	)
+	priv := testRSAKey(t)
+	srvURL, _ := jwksServer(t, map[string]*rsa.PublicKey{kid: &priv.PublicKey})
+
+	tv := newV2JWKSPlugin(t, makeIssuers(map[string]any{
+		"issuer":   iss,
+		"jwks_url": srvURL,
+		// no claim_mappings key
+	}), nil)
+
+	claims := jwt.MapClaims{
+		"sub": "bob",
+		"exp": time.Now().Add(time.Hour).Unix(),
+		"iss": iss,
+	}
+	tok := signRS256(t, priv, kid, claims)
+
+	var (
+		gotPrincipal string
+		gotRoles     string
+		gotTenant    string
+	)
+	upstream := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		gotPrincipal = r.Header.Get("X-Actor-Principal")
+		gotRoles = r.Header.Get("X-Actor-Roles")
+		gotTenant = r.Header.Get("X-Tenant-ID")
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Authorization", "Bearer "+tok)
+	rr := httptest.NewRecorder()
+	tv.Handler(upstream).ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	if gotPrincipal != "" {
+		t.Errorf("X-Actor-Principal: expected absent, got %q", gotPrincipal)
+	}
+	if gotRoles != "" {
+		t.Errorf("X-Actor-Roles: expected absent, got %q", gotRoles)
+	}
+	if gotTenant != "" {
+		t.Errorf("X-Tenant-ID: expected absent, got %q", gotTenant)
+	}
+}
+
+// TestHandler_V2_ClaimMappings_TwoIssuers_DifferentMappings verifies that two
+// issuers can carry independent claim_mappings and each request is served with
+// the correct mapping for its issuer.
+func TestHandler_V2_ClaimMappings_TwoIssuers_DifferentMappings(t *testing.T) {
+	const (
+		iss1 = "https://keycloak.example.com/realms/a"
+		iss2 = "https://auth0.example.com/"
+		kid1 = "kc"
+		kid2 = "a0"
+	)
+	priv1, priv2 := testRSAKey(t), testRSAKey(t)
+	url1, _ := jwksServer(t, map[string]*rsa.PublicKey{kid1: &priv1.PublicKey})
+	url2, _ := jwksServer(t, map[string]*rsa.PublicKey{kid2: &priv2.PublicKey})
+
+	tv := &TokenValidator{}
+	if err := tv.Init(plugin.NewMapConfig(map[string]any{
+		"enabled":    true,
+		"algorithms": []string{"RS256"},
+		"issuers": makeIssuers(
+			map[string]any{
+				"issuer":   iss1,
+				"jwks_url": url1,
+				"claim_mappings": map[string]any{
+					"subject": "preferred_username",
+					"roles":   "realm_access.roles",
+				},
+			},
+			map[string]any{
+				"issuer":   iss2,
+				"jwks_url": url2,
+				"claim_mappings": map[string]any{
+					"subject": "email",
+					"tenant":  "tid", // simple key; URL-style claim keys contain dots which are path-sep
+				},
+			},
+		),
+		"propagate_claims": map[string]any{"mode": "all"},
+		"required_claims":  []string{"sub"},
+	})); err != nil {
+		t.Fatalf("Init: %v", err)
+	}
+
+	makeReq := func(t *testing.T, priv *rsa.PrivateKey, kid string, claims jwt.MapClaims) *http.Request {
+		t.Helper()
+		tok := signRS256(t, priv, kid, claims)
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Set("Authorization", "Bearer "+tok)
+		return req
+	}
+
+	// --- Issuer 1: Keycloak with preferred_username + realm_access.roles ---
+	claims1 := jwt.MapClaims{
+		"sub":                "u-001",
+		"preferred_username": "alice",
+		"realm_access":       map[string]any{"roles": []any{"admin"}},
+		"exp":                time.Now().Add(time.Hour).Unix(),
+		"iss":                iss1,
+	}
+	var gotP1, gotR1, gotT1 string
+	up1 := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		gotP1 = r.Header.Get("X-Actor-Principal")
+		gotR1 = r.Header.Get("X-Actor-Roles")
+		gotT1 = r.Header.Get("X-Tenant-ID")
+	})
+	tv.Handler(up1).ServeHTTP(httptest.NewRecorder(), makeReq(t, priv1, kid1, claims1))
+	if gotP1 != "alice" {
+		t.Errorf("iss1 X-Actor-Principal: want alice, got %q", gotP1)
+	}
+	if gotR1 != "admin" {
+		t.Errorf("iss1 X-Actor-Roles: want admin, got %q", gotR1)
+	}
+	if gotT1 != "" {
+		t.Errorf("iss1 X-Tenant-ID: expected absent, got %q", gotT1)
+	}
+
+	// --- Issuer 2: Auth0-style with email + custom tenant claim ---
+	claims2 := jwt.MapClaims{
+		"sub":   "auth0|xyz",
+		"email": "bob@corp.com",
+		"tid":   "tenant-99",
+		"exp":   time.Now().Add(time.Hour).Unix(),
+		"iss":   iss2,
+	}
+	var gotP2, gotT2 string
+	up2 := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		gotP2 = r.Header.Get("X-Actor-Principal")
+		gotT2 = r.Header.Get("X-Tenant-ID")
+	})
+	tv.Handler(up2).ServeHTTP(httptest.NewRecorder(), makeReq(t, priv2, kid2, claims2))
+	if gotP2 != "bob@corp.com" {
+		t.Errorf("iss2 X-Actor-Principal: want bob@corp.com, got %q", gotP2)
+	}
+	if gotT2 != "tenant-99" {
+		t.Errorf("iss2 X-Tenant-ID: want tenant-99, got %q", gotT2)
+	}
+}
+
+// TestHandler_V2_ClaimMappings_MissingClaim_NoHeader verifies that when the
+// mapped claim is absent from the token, the header is not injected (no empty
+// header set).
+func TestHandler_V2_ClaimMappings_MissingClaim_NoHeader(t *testing.T) {
+	const (
+		iss = "https://idp.example.com"
+		kid = "km"
+	)
+	priv := testRSAKey(t)
+	srvURL, _ := jwksServer(t, map[string]*rsa.PublicKey{kid: &priv.PublicKey})
+
+	tv := &TokenValidator{}
+	if err := tv.Init(plugin.NewMapConfig(map[string]any{
+		"enabled":    true,
+		"algorithms": []string{"RS256"},
+		"issuers": makeIssuers(map[string]any{
+			"issuer":   iss,
+			"jwks_url": srvURL,
+			"claim_mappings": map[string]any{
+				"subject": "preferred_username", // not in token
+				"tenant":  "org_id",             // not in token
+			},
+		}),
+		"propagate_claims": map[string]any{"mode": "all"},
+		"required_claims":  []string{"sub"},
+	})); err != nil {
+		t.Fatalf("Init: %v", err)
+	}
+
+	// Token has only the mandatory claims; no preferred_username or org_id.
+	claims := jwt.MapClaims{
+		"sub": "u-007",
+		"exp": time.Now().Add(time.Hour).Unix(),
+		"iss": iss,
+	}
+	tok := signRS256(t, priv, kid, claims)
+
+	var gotP, gotT string
+	upstream := http.HandlerFunc(func(_ http.ResponseWriter, r *http.Request) {
+		gotP = r.Header.Get("X-Actor-Principal")
+		gotT = r.Header.Get("X-Tenant-ID")
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("Authorization", "Bearer "+tok)
+	rr := httptest.NewRecorder()
+	tv.Handler(upstream).ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusOK {
+		t.Fatalf("expected 200, got %d", rr.Code)
+	}
+	if gotP != "" {
+		t.Errorf("X-Actor-Principal: expected absent for missing claim, got %q", gotP)
+	}
+	if gotT != "" {
+		t.Errorf("X-Tenant-ID: expected absent for missing claim, got %q", gotT)
+	}
+}
