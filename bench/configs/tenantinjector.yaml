@@ -1,0 +1,36 @@
+# gateway/bench/configs/tenantinjector.yaml
+# Plugin config for BENCH-2: token-validator (HS256 test_mode) + tenant-injector.
+# token-validator MUST run before tenant-injector (populates reqctx.JWTClaims).
+# lookup.url points to the mock-webhook container (Docker Compose service name).
+# cache_ttl_seconds: 60 — matches BENCH_DURATION so the single bench-user principal
+# stays cached for the full run; measures 1 cache miss (cold start) + ~5999 hits.
+# Reference: WI-4yaa.BENCH-2
+plugins:
+  - name: token-validator
+    enabled: true
+    test_mode: true
+    jwt_secret: bench-secret
+    audience: bench-gateway
+    propagate_claims:
+      mode: all
+
+  - name: tenant-injector
+    enabled: true
+    principal:
+      claim: sub
+    lookup:
+      url: http://mock-webhook:8122/tenants/{principal}
+      method: GET
+      timeout_ms: 500
+      auth:
+        mode: none
+      response:
+        mode: single
+        tenant_id_field: tenant_id
+      cache:
+        ttl_seconds: 60
+        negative_ttl_seconds: 10
+        max_entries: 1000
+    inject:
+      tenant_header: X-Tenant-ID
+      principal_header: X-Actor-Principal

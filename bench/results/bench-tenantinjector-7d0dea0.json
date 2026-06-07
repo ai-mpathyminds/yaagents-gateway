@@ -1,0 +1,32 @@
+{
+  "plugin": "tenantinjector",
+  "sha": "7d0dea0",
+  "timestamp": "20260607T1148Z",
+  "duration_s": "60",
+  "target_rps": 100,
+  "plugin_enabled": {
+    "requests": 6000,
+    "rps": 100.02,
+    "p50_ms": 2.216,
+    "p95_ms": 4.496,
+    "p99_ms": 19.073,
+    "success_rate": 1
+  },
+  "baseline": {
+    "requests": 6000,
+    "rps": 100.02,
+    "p50_ms": 2.169,
+    "p95_ms": 3.867,
+    "p99_ms": 8.773,
+    "success_rate": 1
+  },
+  "overhead_delta_p99_ms": 10.3,
+  "cache_stats": {
+    "measurement": "docker exec bench-hitrate-mock-webhook-1 wget -qO- http://localhost:8122/metrics",
+    "actual_lookups": 1,
+    "measured_requests": 500,
+    "measured_hit_rate": 0.998,
+    "principal": "bench-user",
+    "cache_ttl_s": 60
+  }
+}

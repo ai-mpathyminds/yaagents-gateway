@@ -1,0 +1,20 @@
+# gateway/bench/Dockerfile.mockwebhook — mock tenant-directory webhook for bench harness
+# Build context: gateway/ directory (holds go.mod for the module).
+# Reference: WI-4yaa.BENCH-2
+
+FROM golang:1.25-alpine AS builder
+WORKDIR /build
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /mockwebhook ./bench/cmd/mockwebhook
+
+FROM alpine:3.20
+RUN addgroup -S bench && adduser -S mockwebhook -G bench
+WORKDIR /app
+COPY --from=builder /mockwebhook /app/mockwebhook
+USER mockwebhook
+EXPOSE 8122
+HEALTHCHECK --interval=5s --timeout=3s --retries=3 \
+  CMD wget -qO- http://localhost:8122/healthz || exit 1
+CMD ["/app/mockwebhook"]

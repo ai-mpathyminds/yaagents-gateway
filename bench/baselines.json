@@ -3,5 +3,10 @@
     "overhead_delta_p99_ms": 4.889,
     "sha": "5c657b8",
     "timestamp": "20260607T1119Z"
+  },
+  "tenantinjector": {
+    "overhead_delta_p99_ms": 10.3,
+    "sha": "7d0dea0",
+    "timestamp": "20260607T1148Z"
   }
 }

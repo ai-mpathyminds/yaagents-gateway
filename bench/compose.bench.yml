@@ -73,6 +73,31 @@ services:
       - bench-net
     restart: "no"
 
+  # mock-webhook: stub tenant-directory used by tenant-injector plugin bench (WI-4yaa.BENCH-2).
+  # For other plugin benches this service starts idle — no traffic is routed to it.
+  mock-webhook:
+    build:
+      context: ..
+      dockerfile: bench/Dockerfile.mockwebhook
+    expose:
+      - "8122"
+    environment:
+      PORT: "8122"
+    healthcheck:
+      test: ["CMD", "wget", "-qO-", "http://localhost:8122/healthz"]
+      interval: 5s
+      timeout: 3s
+      retries: 3
+      start_period: 5s
+    deploy:
+      resources:
+        limits:
+          memory: 32m
+          cpus: "0.25"
+    networks:
+      - bench-net
+    restart: "no"
+
 networks:
   bench-net:
     driver: bridge
