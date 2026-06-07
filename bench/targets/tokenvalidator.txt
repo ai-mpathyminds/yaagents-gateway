@@ -1,0 +1,7 @@
+# vegeta target file — tokenvalidator bench (WI-4yaa.BENCH-1)
+# Token placeholder {{TOKEN}} is replaced by harness.sh with a live HS256 JWT.
+# Format: METHOD URL\nHeader: Value\n (blank line between requests)
+GET http://localhost:8120/bench
+Authorization: {{TOKEN}}
+Content-Type: application/json
+

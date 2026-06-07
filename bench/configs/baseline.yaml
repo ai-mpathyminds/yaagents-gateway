@@ -1,0 +1,12 @@
+# gateway/bench/configs/baseline.yaml
+# Baseline plugin config: token-validator in minimal test_mode (HS256).
+# Used to measure gateway overhead WITHOUT expensive JWKS fetching or
+# multi-IDP routing — the delta vs a per-plugin config isolates plugin cost.
+# token-validator is always-on (loader assertion); minimal config is the
+# cheapest valid state.
+plugins:
+  - name: token-validator
+    enabled: true
+    test_mode: true
+    jwt_secret: bench-secret
+    audience: bench-gateway

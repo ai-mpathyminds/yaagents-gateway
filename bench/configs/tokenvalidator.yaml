@@ -1,0 +1,13 @@
+# gateway/bench/configs/tokenvalidator.yaml
+# Plugin config for BENCH-1: tokenvalidator in test_mode (HS256).
+# Secret must match BENCH_SECRET used by harness.sh / benchtoken.
+# Used with GATEWAY_PLUGINS_FILE to activate the tokenvalidator plugin.
+# Multi-IDP JWKS config (BENCH-1 with live JWKS servers) extends this file.
+plugins:
+  - name: token-validator
+    enabled: true
+    test_mode: true
+    jwt_secret: bench-secret
+    audience: bench-gateway
+    propagate_claims:
+      mode: all

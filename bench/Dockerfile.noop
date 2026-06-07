@@ -1,0 +1,20 @@
+# gateway/bench/Dockerfile.noop — noop-upstream for bench harness
+# Build context: gateway/ directory (holds go.mod for the module).
+# Reference: WI-4yaa.BENCH-0
+
+FROM golang:1.23-alpine3.20 AS builder
+WORKDIR /build
+COPY go.mod go.sum ./
+RUN go mod download
+COPY . .
+RUN CGO_ENABLED=0 GOOS=linux go build -ldflags="-s -w" -o /noop ./bench/cmd/noop
+
+FROM alpine:3.20
+RUN addgroup -S bench && adduser -S noop -G bench
+WORKDIR /app
+COPY --from=builder /noop /app/noop
+USER noop
+EXPOSE 8121
+HEALTHCHECK --interval=5s --timeout=3s --retries=3 \
+  CMD wget -qO- http://localhost:8121/healthz || exit 1
+CMD ["/app/noop"]

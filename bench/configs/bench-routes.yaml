@@ -1,0 +1,19 @@
+# gateway/bench/configs/bench-routes.yaml
+# Routes config for bench harness. Plugins come from GATEWAY_PLUGINS_FILE
+# (set by harness.sh); no inline plugins: block here.
+# Target points to the noop-upstream Docker Compose service on port 8121.
+
+routes:
+  - id: bench-get
+    method: GET
+    path: /bench
+    target: http://noop-upstream:8121
+    tenantRequired: false
+    audit: false
+
+  - id: bench-post
+    method: POST
+    path: /bench
+    target: http://noop-upstream:8121
+    tenantRequired: false
+    audit: false
