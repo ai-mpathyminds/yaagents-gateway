@@ -220,9 +220,9 @@ func TestHandler_InvalidToken_Returns403(t *testing.T) {
 	}
 }
 
-// ── Handler — timeout → 403 with dependency: "license-server" ────────────────
+// ── Handler — timeout → 503 with dependency: "license-server" ────────────────
 
-func TestHandler_Timeout_Returns403WithDependency(t *testing.T) {
+func TestHandler_Timeout_Returns503WithDependency(t *testing.T) {
 	srvURL := hangServer(t)
 	// Override httpClient with 1ms timeout so the test finishes quickly.
 	shortClient := &http.Client{Timeout: 1 * time.Millisecond}
@@ -239,8 +239,8 @@ func TestHandler_Timeout_Returns403WithDependency(t *testing.T) {
 
 	lc.Handler(upstream).ServeHTTP(rr, req)
 
-	if rr.Code != http.StatusForbidden {
-		t.Errorf("status: got %d, want 403", rr.Code)
+	if rr.Code != http.StatusServiceUnavailable {
+		t.Errorf("status: got %d, want 503 (timeout is a transient backend failure)", rr.Code)
 	}
 	if upstreamCalled {
 		t.Error("next must NOT be called on timeout")
@@ -248,6 +248,84 @@ func TestHandler_Timeout_Returns403WithDependency(t *testing.T) {
 	body := decodeError(t, rr)
 	if body.Trace.Dependency != "license-server" {
 		t.Errorf("dependency: got %q, want %q", body.Trace.Dependency, "license-server")
+	}
+}
+
+// ── Handler — connection refused → 503 with dependency: "license-server" ─────
+
+func TestHandler_Unreachable_Returns503WithDependency(t *testing.T) {
+	// Use a port that nothing is listening on.
+	lc := newPlugin(t, "http://127.0.0.1:19877", nil)
+
+	var upstreamCalled bool
+	upstream := http.HandlerFunc(func(_ http.ResponseWriter, _ *http.Request) {
+		upstreamCalled = true
+	})
+
+	req := httptest.NewRequest(http.MethodGet, "/", nil)
+	req.Header.Set("X-License-Token", "tok-unreachable")
+	rr := httptest.NewRecorder()
+
+	lc.Handler(upstream).ServeHTTP(rr, req)
+
+	if rr.Code != http.StatusServiceUnavailable {
+		t.Errorf("status: got %d, want 503 (connection refused is a transient backend failure)", rr.Code)
+	}
+	if upstreamCalled {
+		t.Error("next must NOT be called when license server is unreachable")
+	}
+	body := decodeError(t, rr)
+	if body.Trace.Dependency != "license-server" {
+		t.Errorf("dependency: got %q, want %q", body.Trace.Dependency, "license-server")
+	}
+}
+
+// ── Handler — cache TTL expiry → re-fetch from license server ────────────────
+
+func TestHandler_CacheTTL_Expiry_ReFetch(t *testing.T) {
+	srvURL, calls, _ := hitCounter(t, http.StatusOK)
+
+	// Build plugin with a 1-second TTL so the test can observe expiry quickly.
+	lc := &LicenseCheck{}
+	cfg := plugin.NewMapConfig(map[string]any{
+		"license_url":        srvURL,
+		"cache_ttl_seconds":  1,
+		"max_cache_size":     4,
+	})
+	if err := lc.Init(cfg); err != nil {
+		t.Fatalf("Init: %v", err)
+	}
+
+	upstream := http.HandlerFunc(func(w http.ResponseWriter, _ *http.Request) {
+		w.WriteHeader(http.StatusOK)
+	})
+
+	doReq := func() {
+		req := httptest.NewRequest(http.MethodGet, "/", nil)
+		req.Header.Set("X-License-Token", "ttl-tok")
+		rr := httptest.NewRecorder()
+		lc.Handler(upstream).ServeHTTP(rr, req)
+		if rr.Code != http.StatusOK {
+			t.Errorf("status: got %d, want 200", rr.Code)
+		}
+	}
+
+	doReq() // miss → 1 outbound call; entry cached
+	if n := calls.Load(); n != 1 {
+		t.Fatalf("after first request: calls=%d, want 1", n)
+	}
+
+	doReq() // cache hit within TTL → no new outbound call
+	if n := calls.Load(); n != 1 {
+		t.Errorf("within TTL: calls=%d, want 1 (should be a cache hit)", n)
+	}
+
+	// Sleep past the 1-second TTL so the cache entry expires.
+	time.Sleep(1100 * time.Millisecond)
+
+	doReq() // expired entry → cache miss → new outbound call
+	if n := calls.Load(); n != 2 {
+		t.Errorf("after TTL expiry: calls=%d, want 2 (expired entry should trigger re-fetch)", n)
 	}
 }
 

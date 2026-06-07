@@ -120,7 +120,8 @@ func (lc *LicenseCheck) Init(cfg plugin.PluginConfig) error {
 // 3. On cache miss, call lc.verify against the license server.
 // 4. Cache the result when the server returned an HTTP response (valid or not).
 // Network errors are not cached so the next request retries.
-// 5. On invalid / network-error → 403 vendor-error body (next not called).
+// 5. On invalid (HTTP non-2xx) → 403 vendor-error body.
+//    On network/timeout (dep=="license-server") → 503 vendor-error body.
 // 6. On valid → call next.
 func (lc *LicenseCheck) Handler(next http.Handler) http.Handler {
 	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
@@ -157,14 +158,20 @@ func (lc *LicenseCheck) Handler(next http.Handler) http.Handler {
 		}
 		// Network/timeout error (dep == "license-server") — do not cache.
 
-		response.WriteError(w, http.StatusForbidden, response.ErrorBody{
+		// 503 for network/timeout failures so clients can distinguish
+		// a policy rejection (403) from a transient backend unavailability (503).
+		status := http.StatusForbidden
+		if dep != "" {
+			status = http.StatusServiceUnavailable
+		}
+		response.WriteError(w, status, response.ErrorBody{
 			Type: "forbidden",
 			Code: "license_invalid",
 			Message: "license verification failed",
 			Trace: response.Trace{
 				CorrelationID: corrID,
-				RequestID: reqID,
-				Dependency: dep,
+				RequestID:     reqID,
+				Dependency:    dep,
 			},
 		})
 	})
