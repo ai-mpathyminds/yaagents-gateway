@@ -1,0 +1,24 @@
+{
+  "plugin": "tokenvalidator",
+  "sha": "5c657b8",
+  "timestamp": "20260607T1119Z",
+  "duration_s": "60",
+  "target_rps": 100,
+  "plugin_enabled": {
+    "requests": 6000,
+    "rps": 100.02,
+    "p50_ms": 2.003,
+    "p95_ms": 3.98,
+    "p99_ms": 12.132,
+    "success_rate": 1
+  },
+  "baseline": {
+    "requests": 6000,
+    "rps": 100.02,
+    "p50_ms": 2.141,
+    "p95_ms": 3.38,
+    "p99_ms": 7.243,
+    "success_rate": 1
+  },
+  "overhead_delta_p99_ms": 4.889
+}

@@ -60,9 +60,18 @@ THRESHOLD_PCT  = 0.25   # 25% relative regression
 ABS_FLOOR_MS   = 2.0    # if baseline <= this, use absolute threshold instead
 ABS_THRESHOLD  = 5.0    # absolute ms threshold for near-zero baselines
 
+def _native(p):
+    """Convert MSYS2/Git-Bash /c/... paths to C:/... on Windows."""
+    import sys as _sys
+    if _sys.platform == 'win32' and p.startswith('/'):
+        parts = p.split('/', 2)
+        if len(parts) >= 3 and len(parts[1]) == 1:
+            return parts[1].upper() + ':/' + parts[2]
+    return p
+
 plugin      = "${PLUGIN}"
-result_path = "${RESULT_FILE}"
-baselines_path = "${BASELINES_FILE}"
+result_path = _native("${RESULT_FILE}")
+baselines_path = _native("${BASELINES_FILE}")
 
 with open(result_path) as f:
     result = json.load(f)
@@ -82,7 +91,7 @@ if plugin not in baselines:
         "sha": sha,
         "timestamp": ts,
     }
-    with open(baselines_path, "w") as f:
+    with open(_native(baselines_path), "w") as f:
         json.dump(baselines, f, indent=2)
         f.write("\n")
     print("INFO [regression-check]: baselines.json updated.")

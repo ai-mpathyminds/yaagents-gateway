@@ -116,27 +116,28 @@ sed "s|{{TOKEN}}|Bearer ${TOKEN}|g" "$TARGETS_FILE" > "$TMP_TARGETS"
 # ── helper: run one attack variant ───────────────────────────────────────────
 # run_attack <label> <active_plugins_src>
 # Sets active-plugins.yaml, brings up compose, attacks, tears down.
-# Writes attack report to stdout as JSON; caller captures.
+# Writes ONLY the vegeta JSON report to stdout; all log lines go to stderr.
+# Caller captures stdout only: RESULT="$(run_attack ...)"
 run_attack() {
   local label="$1"
   local cfg_src="$2"
   local project="bench-${PLUGIN}-${label}"
 
-  echo "INFO: [$label] writing active-plugins.yaml from $cfg_src"
+  echo "INFO: [$label] writing active-plugins.yaml from $cfg_src" >&2
   cp "$cfg_src" "$SCRIPT_DIR/active-plugins.yaml"
 
-  echo "INFO: [$label] starting compose stack (project=$project)..."
+  echo "INFO: [$label] starting compose stack (project=$project)..." >&2
   docker compose \
     -f "$COMPOSE_FILE" \
     --project-name "$project" \
     up -d --build --wait \
-    2>&1 | sed "s/^/  [$label] /"
+    2>&1 | sed "s/^/  [$label] /" >&2
 
   # Extra readiness wait — compose --wait checks healthcheck, but give the
   # gateway 1 s after healthy before load starts.
   sleep 1
 
-  echo "INFO: [$label] attacking for $DURATION @ ${RPS} rps..."
+  echo "INFO: [$label] attacking for $DURATION @ ${RPS} rps..." >&2
   local report_json
   report_json="$(vegeta attack \
     -targets "$TMP_TARGETS" \
@@ -145,25 +146,26 @@ run_attack() {
     -timeout=5s \
     | vegeta report -type=json)"
 
-  echo "INFO: [$label] tearing down compose stack..."
+  echo "INFO: [$label] tearing down compose stack..." >&2
   docker compose \
     -f "$COMPOSE_FILE" \
     --project-name "$project" \
     down --remove-orphans \
-    2>&1 | sed "s/^/  [$label] /"
+    2>&1 | sed "s/^/  [$label] /" >&2
 
   # Remove the active-plugins.yaml sentinel so a stale run cannot accidentally
   # pick up the previous variant's config.
   rm -f "$SCRIPT_DIR/active-plugins.yaml"
 
+  # Only the JSON report goes to stdout — the caller captures this.
   echo "$report_json"
 }
 
 # ── run both variants ─────────────────────────────────────────────────────────
-echo "=== variant: plugin-enabled ==="
+echo "=== variant: plugin-enabled ===" >&2
 ENABLED_JSON="$(run_attack "enabled" "$PLUGIN_CFG")"
 
-echo "=== variant: baseline ==="
+echo "=== variant: baseline ===" >&2
 BASELINE_JSON="$(run_attack "baseline" "$BASELINE_CFG")"
 
 # ── parse and compute result ──────────────────────────────────────────────────
@@ -177,8 +179,10 @@ BASELINE_JSON="$(run_attack "baseline" "$BASELINE_CFG")"
 #   "duration":  <int>     // nanoseconds
 # }
 
-echo "INFO: computing result JSON..."
-python3 - <<PYEOF
+echo "INFO: computing result JSON..." >&2
+# Python prints the result JSON to stdout; we capture and write via the shell
+# to avoid Windows path incompatibility with /c/... paths inside Python open().
+RESULT_JSON="$(python3 - <<PYEOF
 import json, sys
 
 def ns_to_ms(ns):
@@ -212,15 +216,15 @@ result = {
     "overhead_delta_p99_ms":  round(ev["p99_ms"] - bv["p99_ms"], 3),
 }
 
-out = json.dumps(result, indent=2)
-print(out)
-
-# Write to result file
-with open("${RESULT_FILE}", "w") as f:
-    f.write(out + "\n")
-print(f"INFO: result written to ${RESULT_FILE}", file=sys.stderr)
+print(json.dumps(result, indent=2))
 PYEOF
+)"
+
+# Write result JSON to file via shell (avoids Python Windows path issues)
+printf '%s\n' "$RESULT_JSON" > "$RESULT_FILE"
+echo "INFO: result written to $RESULT_FILE" >&2
+echo "$RESULT_JSON"
 
 # ── regression check ─────────────────────────────────────────────────────────
-echo "INFO: running regression-check.sh..."
+echo "INFO: running regression-check.sh..." >&2
 bash "$SCRIPT_DIR/regression-check.sh" "$PLUGIN" "$RESULT_FILE"

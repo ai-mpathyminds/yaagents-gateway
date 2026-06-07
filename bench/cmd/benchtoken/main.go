@@ -5,7 +5,7 @@
 // The token is valid for the configured expiry (-exp seconds from now) and
 // carries minimal claims suitable for the tokenvalidator plugin in test_mode.
 //
-// Usage: go run ./bench/cmd/benchtoken -secret <secret> -subject <sub> -exp <seconds>
+// Usage: go run ./bench/cmd/benchtoken -secret <secret> -subject <sub> -audience <aud> -exp <seconds>
 // Output: the raw JWT string (stdout); use: BENCH_TOKEN="$(go run ./bench/cmd/benchtoken ...)"
 package main
 
@@ -19,17 +19,19 @@ import (
 )
 
 func main() {
-	secret := flag.String("secret", "bench-secret", "HS256 signing secret")
-	subject := flag.String("subject", "bench-user", "JWT sub claim")
-	expSec := flag.Int("exp", 3600, "token validity in seconds from now")
+	secret   := flag.String("secret",   "bench-secret",  "HS256 signing secret")
+	subject  := flag.String("subject",  "bench-user",    "JWT sub claim")
+	audience := flag.String("audience", "bench-gateway", "JWT aud claim")
+	issuer   := flag.String("issuer",   "bench-harness", "JWT iss claim")
+	expSec   := flag.Int("exp",         3600,            "token validity in seconds from now")
 	flag.Parse()
 
 	claims := jwt.MapClaims{
 		"sub":  *subject,
-		"iss":  "bench-harness",
+		"iss":  *issuer,
 		"exp":  time.Now().Add(time.Duration(*expSec) * time.Second).Unix(),
 		"iat":  time.Now().Unix(),
-		"aud":  "bench-gateway",
+		"aud":  *audience,
 		// role claim accepted by tokenvalidator for bench load profile
 		"roles": []string{"bench"},
 	}
