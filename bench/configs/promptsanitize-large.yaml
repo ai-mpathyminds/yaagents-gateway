@@ -1,0 +1,31 @@
+# gateway/bench/configs/promptsanitize-large.yaml
+# Plugin config for BENCH-4 "reject-large" variant: token-validator (HS256) +
+# prompt-sanitize with strategy=reject and email + injection-keyword patterns.
+# Body: promptsanitize-clean-large.json (~11KB, large >10KB bucket).
+# Clean body contains no email addresses or injection phrases → patterns never
+# match → 100% 200 OK.
+# Overhead measured = pure pattern-engine scanning cost on large payloads;
+# reveals O(n) body-scan cost vs small/medium variants.
+# Reference: WI-4yaa.BENCH-4
+plugins:
+  - name: token-validator
+    enabled: true
+    test_mode: true
+    jwt_secret: bench-secret
+    audience: bench-gateway
+
+  - name: prompt-sanitize
+    enabled: true
+    strategy: reject
+    on_match_reject_status: 412
+    max_body_bytes: 1048576
+    patterns:
+      - name: pii_email
+        regex: '[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}'
+        action: reject
+      - name: injection_attempt
+        keywords:
+          - "ignore previous instructions"
+          - "jailbreak"
+          - "system prompt override"
+        action: reject

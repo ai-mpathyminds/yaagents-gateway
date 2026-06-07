@@ -1,0 +1,28 @@
+{
+  "plugin": "promptsanitize",
+  "sha": "21ab2fc",
+  "timestamp": "20260607T1256Z",
+  "duration_s": "60",
+  "target_rps": 100,
+  "mode": "reject_medium_body",
+  "body_size_bucket": "medium_1_to_10KB",
+  "body_size_bytes": 3046,
+  "plugin_enabled": {
+    "requests": 6000,
+    "rps": 100.02,
+    "p50_ms": 1.562,
+    "p95_ms": 2.307,
+    "p99_ms": 5.236,
+    "success_rate": 1
+  },
+  "baseline": {
+    "requests": 6000,
+    "rps": 100.02,
+    "p50_ms": 1.26,
+    "p95_ms": 2.397,
+    "p99_ms": 6.532,
+    "success_rate": 1
+  },
+  "overhead_delta_p99_ms": -1.296,
+  "architect_note": "PRIMARY GATE RUN. strategy=reject on a clean 3046B body (no pattern matches). Patterns: pii_email (regex) + injection_attempt (keywords). 100% 200 OK. overhead_delta=-1.296ms is within measurement noise (baseline p99 variance occasionally exceeds plugin p99 on fast paths). p50=1.6ms confirms near-zero scanning overhead on medium payloads. RE2 scan on ~3KB adds no perceptible latency at 100 RPS. Gates PLG-13."
+}

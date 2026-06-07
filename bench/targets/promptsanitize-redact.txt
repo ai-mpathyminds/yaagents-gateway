@@ -1,0 +1,8 @@
+# vegeta target file — promptsanitize-redact bench (WI-4yaa.BENCH-4)
+# strategy=redact, PII medium body. Token placeholder {{TOKEN}} replaced by harness.sh.
+# Body contains 5 email addresses; plugin redacts all and forwards modified body.
+# @path resolves relative to vegeta CWD (gateway/); run: cd gateway && bash bench/harness.sh promptsanitize-redact
+POST http://localhost:8120/bench
+Authorization: {{TOKEN}}
+Content-Type: application/json
+@bench/bodies/promptsanitize-pii-medium.json

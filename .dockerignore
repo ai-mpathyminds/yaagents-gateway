@@ -19,3 +19,12 @@ docs/
 .git/
 .gitignore
 .dockerignore
+
+# Bench runtime artefacts — written during harness.sh runs; NOT needed in the
+# gateway image.  Excluding them keeps the COPY . . layer cache stable across
+# bench runs (otherwise active-plugins.yaml invalidates the cache every run).
+bench/active-plugins.yaml
+bench/bodies/
+bench/configs/
+bench/targets/
+bench/results/

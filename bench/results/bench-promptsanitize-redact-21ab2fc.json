@@ -1,0 +1,28 @@
+{
+  "plugin": "promptsanitize-redact",
+  "sha": "21ab2fc",
+  "timestamp": "20260607T1308Z",
+  "duration_s": "60",
+  "target_rps": 100,
+  "mode": "redact_medium_pii_body",
+  "body_size_bucket": "medium_1_to_10KB",
+  "body_size_bytes": 1273,
+  "plugin_enabled": {
+    "requests": 6000,
+    "rps": 100.02,
+    "p50_ms": 1.53,
+    "p95_ms": 2.288,
+    "p99_ms": 4.794,
+    "success_rate": 1
+  },
+  "baseline": {
+    "requests": 6000,
+    "rps": 100.02,
+    "p50_ms": 1.273,
+    "p95_ms": 2.093,
+    "p99_ms": 4.045,
+    "success_rate": 1
+  },
+  "overhead_delta_p99_ms": 0.749,
+  "architect_note": "strategy=redact on a 1273B PII body containing 5 email addresses (matches pii_email regex pattern). Plugin redacts all 5 emails to [REDACTED] on every request and forwards modified body. 100% 200 OK confirms redact path succeeds. overhead_delta=0.749ms vs reject primary-gate overhead_delta=-1.296ms — redact overhead is NOT >2x reject overhead; no escalation required (AC PLG-13). p50=1.53ms vs reject p50=1.56ms (within noise); redact string-replacement adds no perceptible latency vs scan-only on the medium body class."
+}

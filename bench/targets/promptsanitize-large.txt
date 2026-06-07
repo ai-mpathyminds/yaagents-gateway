@@ -1,0 +1,7 @@
+# vegeta target file — promptsanitize-large bench (WI-4yaa.BENCH-4)
+# strategy=reject, large body (>10KB). Token placeholder {{TOKEN}} replaced by harness.sh.
+# @path resolves relative to vegeta CWD (gateway/); run: cd gateway && bash bench/harness.sh promptsanitize-large
+POST http://localhost:8120/bench
+Authorization: {{TOKEN}}
+Content-Type: application/json
+@bench/bodies/promptsanitize-clean-large.json

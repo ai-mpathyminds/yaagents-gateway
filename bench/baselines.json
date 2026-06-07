@@ -18,5 +18,25 @@
     "overhead_delta_p99_ms": -1.119,
     "sha": "c023513",
     "timestamp": "20260607T1222Z"
+  },
+  "promptsanitize-small": {
+    "overhead_delta_p99_ms": 11.5,
+    "sha": "21ab2fc",
+    "timestamp": "20260607T1252Z"
+  },
+  "promptsanitize": {
+    "overhead_delta_p99_ms": -1.296,
+    "sha": "21ab2fc",
+    "timestamp": "20260607T1256Z"
+  },
+  "promptsanitize-large": {
+    "overhead_delta_p99_ms": 1.282,
+    "sha": "21ab2fc",
+    "timestamp": "20260607T1305Z"
+  },
+  "promptsanitize-redact": {
+    "overhead_delta_p99_ms": 0.749,
+    "sha": "21ab2fc",
+    "timestamp": "20260607T1308Z"
   }
 }
