@@ -36,6 +36,7 @@ import (
 	"github.com/ai-mpathyminds/yaagents-gateway/internal/proxy"
 	"github.com/ai-mpathyminds/yaagents-gateway/internal/response"
 	"github.com/ai-mpathyminds/yaagents-gateway/internal/routes"
+	"github.com/ai-mpathyminds/yaagents-gateway/internal/tenant"
 
 	// Plugin side-effect registrations .
 	_ "github.com/ai-mpathyminds/yaagents-gateway/internal/plugins/cors"
@@ -104,7 +105,11 @@ func main() {
 	}
 
 	// PLG-6: shutdown gate — new requests after SIGTERM receive 503.
-	chain := ldr.Chain(dispatcher)
+	// WI-4yaa.GW-CMW: wrap dispatcher with tenant.ContextMiddleware so X-Tenant-ID +
+	// actor subject/roles are extracted from the auth claims and stored in the request
+	// context on every proxied request. ContextMiddleware runs after the plugin chain
+	// (which includes tokenvalidator/auth) and before the route dispatcher.
+	chain := ldr.Chain(tenant.ContextMiddleware(log)(dispatcher))
 	var shuttingDown atomic.Bool
 	chainWithGate := withShutdownGate(chain, &shuttingDown)
 
