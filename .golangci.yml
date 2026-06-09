@@ -2,15 +2,22 @@
 # WI-1yaa.REL-6 (CI matrix) + WI-1yaa.NFR-GW-1 (sec hardening)
 # Run: golangci-lint run ./...  (from gateway/)
 #
-# Schema: v2 (golangci-lint v2.0+). Migrated from v1 schema 2026-06-09:
-#   - top-level `linters-settings:` → nested `linters: settings:`
-#   - top-level `issues: max-*` block removed (v2 defaults: max-issues-per-linter=50,
-#     max-same-issues=3; if higher caps needed, use v2 `issues:` block with `max-issues:`)
-#   - `gosimple` removed: in v2 it is folded into `staticcheck` (S1* simplification checks
-#     remain enabled via staticcheck above; explicit `gosimple` causes "unknown linter")
-# v2 ref: https://golangci-lint.run/usage/configuration/
-
-version: "2"
+# Minimal-schema config — survives strict schema validation across golangci-lint
+# v1.x AND v2.x without binary-pin tracking. The yaagents CI uses
+# `install-mode: goinstall` to build from source against the runner's Go 1.25
+# (necessary because gateway/go.mod targets go 1.25.0; prebuilt v1.64 was Go
+# 1.24-built and rejected the target). The goinstall path resolves to whatever
+# `@latest` points at and at the time of this config, both `linters-settings:`
+# (v1) and `linters: settings:` (the documented v2 nesting) failed the
+# binary's strict schema validation. Stripped both to keep the lint running
+# while the upstream v2 schema settles.
+#
+# Trade-off: lost the gosec G101 exclusion (false-positive on GATEWAY_JWT_SECRET
+# env-var name string) and the errcheck check-blank: false (allowed
+# fmt.Fprint ignored returns). If either triggers a lint hit in gateway code,
+# the right fix is either (a) inline `//nolint:gosec // G101: env-var name, not
+# a literal credential` annotations, or (b) re-introduce the settings block in
+# whatever syntax the pinned golangci-lint version actually accepts.
 
 linters:
   enable:
@@ -23,16 +30,3 @@ linters:
     - bodyclose      # HTTP response body not closed
     - noctx          # HTTP requests without context
     - misspell       # common spelling mistakes
-
-  settings:
-    gosec:
-      # G101 — "hardcoded credentials" triggers on the word "secret" in var names.
-      # GATEWAY_JWT_SECRET is an env-var name documented in an env-var used at runtime only;
-      # it is never assigned a literal credential value in source. Exclude G101 to
-      # avoid false positives on env-var name strings.
-      excludes:
-        - G101
-    errcheck:
-      # fmt.Fprint* return values in HTTP handlers are intentionally ignored
-      # (write-after-close is not a correctness issue for in-flight responses).
-      check-blank: false
