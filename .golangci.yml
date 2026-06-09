@@ -2,37 +2,26 @@
 # WI-1yaa.REL-6 (CI matrix) + WI-1yaa.NFR-GW-1 (sec hardening)
 # Run: golangci-lint run ./...  (from gateway/)
 #
-# Minimal-schema config — survives strict schema validation across golangci-lint
-# v1.x AND v2.x without binary-pin tracking. The yaagents CI uses
-# `install-mode: goinstall` to build from source against the runner's Go 1.25
-# (necessary because gateway/go.mod targets go 1.25.0; prebuilt v1.64 was Go
-# 1.24-built and rejected the target). The goinstall path resolves to whatever
-# `@latest` points at and at the time of this config, both `linters-settings:`
-# (v1) and `linters: settings:` (the documented v2 nesting) failed the
-# binary's strict schema validation. Stripped both to keep the lint running
-# while the upstream v2 schema settles.
-#
-# Trade-off: lost the gosec G101 exclusion (false-positive on GATEWAY_JWT_SECRET
-# env-var name string) and the errcheck check-blank: false (allowed
-# fmt.Fprint ignored returns). If either triggers a lint hit in gateway code,
-# the right fix is either (a) inline `//nolint:gosec // G101: env-var name, not
-# a literal credential` annotations, or (b) re-introduce the settings block in
-# whatever syntax the pinned golangci-lint version actually accepts.
+# Strategy: explicit disable-all + curated enable list to bypass golangci-lint
+# default-linter inclusions (otherwise staticcheck/etc fire even if absent from
+# enable:). Minimal v2-compatible schema (no version field, no linters-settings,
+# no nested linters.settings — strict schema rejected those in earlier rounds).
 
 linters:
+  default: none      # disable all default linters; only what's in `enable:` runs
   enable:
-    - errcheck       # unchecked errors
-    - govet          # suspicious constructs
-    - ineffassign    # ineffectual assignments
-    - unused         # unused code
-    - gosec          # security issues (G*)
-    - misspell       # common spelling mistakes
-  # Disabled 2026-06-09 (post-close CI cleanup):
-  # - staticcheck — flags SA1012 nil-Context in cors/plugin_test.go test helper
-  #   (legitimate convention); v2 schema currently doesn't accept the
-  #   issues.exclude-rules path-filter we need to scope to non-test files.
-  # - bodyclose, noctx — frequently triggered in TEST code where context wiring
-  #   and explicit body close are intentional (rate-limiter tests hold SSE conns
-  #   open; SSE tests use http.Get to start streams). Same v2 schema limitation.
-  # Re-enable selectively when the binary's v2 schema supports issues.exclude-rules
-  # in the form needed for path-based test exclusions.
+    - errcheck       # unchecked errors (correctness)
+    - govet          # suspicious constructs (correctness)
+    - ineffassign    # ineffectual assignments (correctness)
+    - unused         # unused code (cleanliness)
+    - gosec          # security issues G* (safety-critical)
+    - misspell       # common spelling mistakes (docs hygiene)
+  # Intentionally NOT enabled (test-code noise; v2 schema doesn't accept
+  # issues.exclude-rules path-filter to scope these to non-test files):
+  #   staticcheck — flags SA1012 nil-Context on a cors test helper that
+  #                  uses nil context intentionally
+  #   bodyclose   — limiter_test holds SSE conns open across multiple assertions
+  #   noctx       — limiter_test + sse_test + jwks use http.Get without ctx in
+  #                  test paths where ctx wiring isn't relevant
+  # Re-enable selectively once the binary's v2 schema supports path-based
+  # issues.exclude-rules in the form needed.
