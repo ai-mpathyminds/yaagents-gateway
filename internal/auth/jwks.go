@@ -4,6 +4,7 @@
 package auth
 
 import (
+	"context"
 	"crypto/rsa"
 	"encoding/base64"
 	"encoding/json"
@@ -101,7 +102,11 @@ func (v *JWKSValidator) getKey(kid string) (*rsa.PublicKey, error) {
 
 // refresh fetches the JWKS from v.url and updates the key cache.
 func (v *JWKSValidator) refresh() error {
-	resp, err := v.client.Get(v.url)
+	req, err := http.NewRequestWithContext(context.Background(), http.MethodGet, v.url, nil)
+	if err != nil {
+		return fmt.Errorf("jwks request: %w", err)
+	}
+	resp, err := v.client.Do(req)
 	if err != nil {
 		return fmt.Errorf("jwks fetch: %w", err)
 	}

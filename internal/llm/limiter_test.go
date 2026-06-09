@@ -187,7 +187,7 @@ func TestNewProxy_11thSSE_Returns429(t *testing.T) {
 	// Open 10 SSE connections and confirm each is active (past TryAcquire).
 	clients := make([]*http.Response, 10)
 	for i := 0; i < 10; i++ {
-		resp, err := http.Get(gw.URL + "/stream")
+		resp, err := http.Get(gw.URL + "/stream") //nolint:bodyclose // test holds SSE connections open to assert limiter; readFirstChunk drains
 		if err != nil {
 			t.Fatalf("conn %d: %v", i+1, err)
 		}
@@ -314,7 +314,7 @@ func TestNewProxy_NilLimiter_NoLimit(t *testing.T) {
 	t.Cleanup(gw.Close)
 
 	for i := 0; i < 20; i++ {
-		resp, err := http.Get(gw.URL + "/stream")
+		resp, err := http.Get(gw.URL + "/stream") //nolint:bodyclose // test holds SSE connections open to assert limiter; readFirstChunk drains
 		if err != nil {
 			t.Fatalf("request %d: %v", i+1, err)
 		}

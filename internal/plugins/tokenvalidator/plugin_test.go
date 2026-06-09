@@ -30,7 +30,7 @@ import (
 // testRSAKey generates a 1024-bit RSA key pair for tests (fast; not for production).
 func testRSAKey(t *testing.T) *rsa.PrivateKey {
 	t.Helper()
-	priv, err := rsa.GenerateKey(rand.Reader, 1024)
+	priv, err := rsa.GenerateKey(rand.Reader, 1024) //nolint:gosec // G403: 1024-bit RSA is for fast test fixtures only, never production
 	if err != nil {
 		t.Fatalf("generate RSA key: %v", err)
 	}
