@@ -1,6 +1,14 @@
 # golangci-lint configuration for yaagents/gateway
 # WI-1yaa.REL-6 (CI matrix) + WI-1yaa.NFR-GW-1 (sec hardening)
 # Run: golangci-lint run ./...  (from gateway/)
+#
+# Schema: v2 (golangci-lint v2.0+). Migrated from v1 schema 2026-06-09:
+#   - top-level `linters-settings:` → nested `linters: settings:`
+#   - top-level `issues: max-*` block removed (v2 defaults: max-issues-per-linter=50,
+#     max-same-issues=3; if higher caps needed, use v2 `issues:` block with `max-issues:`)
+#   - `gosimple` removed: in v2 it is folded into `staticcheck` (S1* simplification checks
+#     remain enabled via staticcheck above; explicit `gosimple` causes "unknown linter")
+# v2 ref: https://golangci-lint.run/usage/configuration/
 
 version: "2"
 
@@ -8,8 +16,7 @@ linters:
   enable:
     - errcheck       # unchecked errors
     - govet          # suspicious constructs
-    - staticcheck    # static analysis (SA*, S1*, QF*)
-    - gosimple       # simplifications
+    - staticcheck    # static analysis (SA*, S1*, QF* — includes former gosimple)
     - ineffassign    # ineffectual assignments
     - unused         # unused code
     - gosec          # security issues (G*)
@@ -17,19 +24,15 @@ linters:
     - noctx          # HTTP requests without context
     - misspell       # common spelling mistakes
 
-linters-settings:
-  gosec:
-    # G101 — "hardcoded credentials" triggers on the word "secret" in var names.
-    # GATEWAY_JWT_SECRET is an env-var name documented in an env-var used at runtime only;
-    # it is never assigned a literal credential value in source. Exclude G101 to
-    # avoid false positives on env-var name strings.
-    excludes:
-      - G101
-  errcheck:
-    # fmt.Fprint* return values in HTTP handlers are intentionally ignored
-    # (write-after-close is not a correctness issue for in-flight responses).
-    check-blank: false
-
-issues:
-  max-issues-per-linter: 0
-  max-same-issues: 0
+  settings:
+    gosec:
+      # G101 — "hardcoded credentials" triggers on the word "secret" in var names.
+      # GATEWAY_JWT_SECRET is an env-var name documented in an env-var used at runtime only;
+      # it is never assigned a literal credential value in source. Exclude G101 to
+      # avoid false positives on env-var name strings.
+      excludes:
+        - G101
+    errcheck:
+      # fmt.Fprint* return values in HTTP handlers are intentionally ignored
+      # (write-after-close is not a correctness issue for in-flight responses).
+      check-blank: false
